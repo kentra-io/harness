@@ -1,6 +1,6 @@
 # Planning Domain — Design & Implementation Analysis
 
-*Generated: 2026-06-16 | Revised: 2026-06-16 (engine decision changed Fabro → Conductor; see §0 and [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md)). Companion to [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md), [workflow-orchestration-analysis.md](./workflow-orchestration-analysis.md), [references/technologies.md](./references/technologies.md), [references/library-analysis.md](./references/library-analysis.md), and [references/spec-kit-ecosystem-research.md](./references/spec-kit-ecosystem-research.md).*
+*Generated: 2026-06-16 | Revised: 2026-06-16 (engine decision changed Fabro → Conductor, see §0; **planning/spec layer DECIDED = extend Spec-Kit via a committed `kentra` extension+preset bundle, see §6b**; runtime-agnostic promoted to a first-class v1 requirement, see §0.4). Companion to [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md), [workflow-orchestration-analysis.md](./workflow-orchestration-analysis.md), [references/technologies.md](./references/technologies.md), [references/library-analysis.md](./references/library-analysis.md), and [references/spec-kit-ecosystem-research.md](./references/spec-kit-ecosystem-research.md).*
 
 > **What this document is.** The design for the harness's **planning domain** — the entire issue lifecycle from intake to docs — and an honest assessment of how much of it the reference library covers off-the-shelf versus how much we build. Produced through structured grilling; every decision below was made deliberately, and deferred decisions are flagged as such rather than silently resolved.
 >
@@ -33,20 +33,23 @@ Under D2 the engine never sees the model calls (the agent CLI makes them), so te
 ### 0.3 Topology — engine on host, every agent in a `cb` box
 The **engine control-plane runs on the host**; **every agent invocation — intake, the Opus orchestrator, planning, design, implementation, verification — runs as a `claude` session inside a `cb`-spawned claudebox**. "Everything runs in claudebox" and "the engine may run on the host" are consistent: *steps* run in boxes; the engine's next-node bookkeeping runs on the host. Because the engine is on the host, `cb run` hits the host Docker daemon directly — **no nested-Docker-through-the-socket-proxy problem**.
 
+### 0.4 Runtime-agnostic is a first-class v1 requirement (decided 2026-06-16)
+The harness targets **running multiple coding agents**, and the planning/spec layer must be **runtime-agnostic** — "no good reason it should be Claude-specific." This **supersedes the earlier §0.1 "claudebox-first, defer multi-runtime" lean**: agent-agnostic *artifact/command tooling* is weighted as a present requirement, and is a primary reason the planning layer adopts **Spec-Kit** (it generates command/skill files per agent — Claude Code, Cursor, Copilot, Gemini, … — §6b) rather than a Claude-Code-native bespoke build. Conductor's provider seam (§0.1) remains the multi-*model-runtime* mechanism; this decision is about the *tooling* being agent-neutral.
+
 ---
 
 ## 1. Verdict
 
 **No single library tool implements the planning domain.** The closest matches each cover one slice:
 
-- **Conductor** (workflow engine, MS, Python, MIT) — owns workflow definition (YAML), sequencing, conditional routing, bounded retry, HITL gates, per-step model/provider selection, resume/checkpoint, cost tracking, and an embeddable event bus. **Adopted as the engine, extended additively** (§0). *(Fabro was the prior choice; see [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md).)*
+- **Conductor** (workflow engine, MS, Python, MIT) — owns workflow definition (YAML), sequencing, conditional routing, bounded retry, HITL gates, per-step model/provider selection, resume/checkpoint, per-step cost *reporting* (surfaced on its event bus; distinct from the LiteLLM cost *gateway*, §0.2), and an embeddable event bus. **Adopted as the engine, extended additively** (§0). *(Fabro was the prior choice; see [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md).)*
 - **GitHub Issues + Projects v2** — system of record for issues and coarse lifecycle state.
-- **Spec-Kit / OpenSpec / adr-tools / Log4brains / Mneme** — references for the spec-management and constitution layers; **none adopted wholesale** — we steal proven *models* from each.
+- **Spec-Kit — ADOPTED for the spec-management layer**, extended via a committed **`kentra` extension+preset bundle** (§6b): staged artifacts, lifecycle commands/hooks, and `/analyze` as the plan-time deviation engine. **OpenSpec / adr-tools / Log4brains / Mneme** remain references we mine for *models* (delta/archive, ADR convention, generation-time hook). *(This reverses the earlier "none adopted wholesale / custom layout" lean — source-level investigation of Spec-Kit's v0.10 extension system + ~172-extension catalog, 2026-06-16.)*
 - **LiteLLM + Langfuse** — the observability plane (cost/trace/telemetry), adopted off-the-shelf, beneath the engine (§12a).
 
-The two genuinely **novel** pieces — a **governed multi-document constitution with a human amendment gate**, and a **continuous drift detector that files issues** — exist in *no tool, in no combination* (confirmed by dedicated research, 2026-06-16). These are the harness's differentiators and we build them regardless.
+The two genuinely **novel** pieces — a **governed multi-document constitution with a human amendment gate**, and a **continuous drift detector that files issues** — exist in *no tool, in no combination* (confirmed by dedicated research, 2026-06-16). These are the harness's differentiators and we build them regardless *of tool coverage* (the constitution + amendment gate in v1; the drift detector deferred to a background worker — §15).
 
-**Custom work required, in rough order of effort:** (1) Conductor `ClaudeboxProvider` (drive `claude -p` inside a `cb` box); (2) GitHub adapter (via `gh` script steps); (3) the spec-management layout + event-sourced constitution; (4) the deviation/amendment governance; (5) the multi-run "issue board" dashboard (thin aggregator over Conductor's event bus + GitHub Projects); (6) the drift detector (deferred to a background worker). Everything else is off-the-shelf (Conductor, GitHub, Claude Code subagents, LiteLLM/Langfuse) or borrowed convention.
+**Custom work required, in rough order of effort:** (1) Conductor `ClaudeboxProvider` (drive `claude -p` inside a `cb` box); (2) GitHub adapter (via `gh` script steps — incl. the Projects-v2 claim=assign+transition, which **no** Spec-Kit extension provides); (3) the **`kentra` Spec-Kit bundle** (preset: func/NFR/design/plan templates; extension: intent-named commands + ADR + projection-regen + analyze commands + docs-stage hook — §6b); (4) the deviation/amendment **enforcement in Conductor** (extensions only emit structured records; Conductor blocks); (5) the immutable ADR log + projection regeneration; (6) the multi-run "issue board" dashboard; (7) the drift detector (deferred to a background worker). Everything else is off-the-shelf (Conductor, Spec-Kit, GitHub, Claude Code subagents, LiteLLM/Langfuse) or borrowed convention.
 
 ---
 
@@ -141,7 +144,7 @@ Issues enter two ways — a human **files a GitHub issue**, or a **Claude conver
 
 > **Engine fit (free win):** Conductor spawns a **fresh `claude` subprocess per step** (no session carryover), and sequential steps share the issue's worktree, so a step reads the file the previous step wrote. "Fresh thread per stage, the artifact file is the interface" is therefore the engine's **native behavior**, not something to engineer.
 
-**Library coverage & decision (research-backed, 2026-06-16):** No tool matches the exact artifact separation (func-vs-NFR-vs-design-vs-plan). **Decision: custom layout, Spec-Kit-shaped, stealing four proven models** rather than adopting any framework wholesale:
+**Library coverage & decision (REVISED 2026-06-16 — see §6b):** No tool matches the exact artifact separation off-the-shelf, but **Spec-Kit is a first-class extension platform**, so the decision is now **adopt Spec-Kit and extend it via a committed `kentra` extension+preset bundle** — *not* a from-scratch layout. (Source-level investigation of Spec-Kit's v0.10 extension system + the ~172-extension community catalog overturned the earlier "build custom" lean.) We still **mine proven models** from:
 
 - **Folder + living-spec lifecycle** ← **OpenSpec's** change-folder + **delta/archive** model (the canonical living-spec implementation).
 - **ADR substrate** ← **adr-tools / Log4brains** one-decision-per-file Markdown convention.
@@ -149,6 +152,37 @@ Issues enter two ways — a human **files a GitHub issue**, or a **Claude conver
 - **Build ourselves:** the governed multi-doc constitution + amendment gate, and the drift detector — *no tool has these*.
 
 > **Why not adopt Spec Kitty** (Priivacy-ai/spec-kitty)? Its strengths (worktree isolation, lifecycle lanes, review/accept/merge gates) are *exactly what Conductor + the `cb` claudebox executor already own*. Adopting it means two systems fighting over execution orchestration. It's a reference for artifact structure, not a dependency.
+
+---
+
+## 6b. Spec-Kit adoption — the concrete plan (decided 2026-06-16)
+
+**Decision: the planning/spec layer is built by EXTENDING GitHub Spec-Kit** (MIT, Python CLI, agent-agnostic), packaged as a custom **`kentra` extension + preset bundle**. Conductor still owns orchestration and *all hard enforcement*; Spec-Kit owns artifact structure, the lifecycle command/hook surface, and the `/analyze` plan-time engine. This supersedes §6's earlier *build-the-layout-from-scratch* lean (the four reference models there are retained as references, not reversed).
+
+**The capability line (load-bearing).** A Spec-Kit extension is a **structuring + lifecycle-triggering + doc-generation veneer**; **Conductor is the enforcement kernel.** Extension hooks are *non-blocking / agent-honored* (no runtime stop), and the catalog `effect` tag is advisory, not a sandbox. Therefore:
+- *In the `kentra` bundle:* artifact templates, intent-named commands, doc generators, context hooks.
+- *In Conductor:* every hard gate (human approval, blocking deviation, amendment), capability boundaries.
+- *The seam:* the extension **emits a structured record**; Conductor **reads it and enforces** the halt.
+
+**Decided specifics (this session):**
+
+| # | Decision | Detail |
+|---|---|---|
+| **Packaging** | **Committed `.specify/` per project** | Each target repo commits its full `.specify/` (pinned Spec-Kit tooling + the `kentra` bundle + `memory/` artifacts) → projects are self-contained / reproducible without the harness. **Accepted cost: upgrades fan out** — mitigated by a harness-owned `kentra` sync/update command + version pinning (LiteLLM/claudebox precedent). The Spec-Kit CLI is installed via `.claudebox/Dockerfile` (uv/pipx), not at runtime. |
+| **Commands** | **Intent-named, convention-conformant, bare aliases** | `speckit.kentra.requirements` / `…design` / `…plan` / `…analyze` / `…adr` / `…regen` (conforms to Spec-Kit's required `speckit.{ext}.{cmd}` pattern), each with a **bare alias** (`kentra.requirements`, …). Named for *our* intent — resolves the native mismatch (Spec-Kit `plan`≈our design, `tasks`≈our plan); the native templates/flow run underneath so `/analyze` keeps working. Baked into the repo. |
+| **Gate wiring** | **Structured file in the spec-folder** | Each check writes `deviation.json` / `approval-state.json` into the issue's spec-folder; Conductor reads it at the gate step and enforces block/proceed. Decoupled, inspectable, committed beside the artifact, runtime-agnostic. (Borrow `spec-validate`'s JSON+hash approval model; `architecture-guard`'s cite-the-principle output.) |
+| **v1 scope** | **All four governance pieces ship** | ADR append-only log · projection regeneration · amendment gate (HARD RULE) · plan-time deviation gate. Only the continuous drift-filer + brownfield extraction stay deferred (§15). |
+
+**The `kentra` bundle — concrete contents:**
+- **Preset (template overrides):** `requirements` (functional + NFR as **distinct sections in one doc** — the cheap path that keeps `/analyze` working), `design`, `plan` (milestones, each with a per-milestone **validation contract / DoD**).
+- **Extension commands** (`speckit.kentra.*` + bare aliases): `requirements` · `design` · `plan` (intent-named entry points over the native flow); `constitution-init` (greenfield principles interview, wraps `/speckit.constitution`); `analyze` (plan-time deviation → emits `deviation.json`); `adr` (append a new/superseding **immutable** ADR); `regen` (projection: read all specs + ADRs → rewrite architecture + living-spec; wired to the docs-stage `after_*` hook).
+- **Hooks:** docs-stage trigger for `regen`; `before_*` constitution context-injection (memory-loader pattern). *(Hooks only prompt; Conductor enforces.)*
+- **Reference patterns mined** (single-author/low-star → patterns, **not** runtime deps): `spec-validate` (approval state), `architecture-guard` (constitution+cite), `spec-kit-arch` (projection-regen mechanism), `DocGuard` (ADR template + traceability validators), `superpowers-bridge` (bounded-gate pattern), `spec-kit-bugfix` (surgical spec-tracing for the §11 bug flow).
+
+**Hard limits to respect:**
+- **Avoid all orchestration-flavored extensions** (Fleet, MAQA, Loop/Ralph, Conduct, worktree-*) — they assert execution/worktree/HITL ownership and collide with Conductor (the Spec-Kitty problem). Only `spec-kit-schedule` is collision-free (could *feed* Conductor).
+- **No GitHub extension fits** our Projects-v2 claim=assign+transition or issue-as-folder model (the issue extensions *invert* it) — build the GitHub adapter ourselves (§5); borrow only the `gh` traceability-comment pattern.
+- **No tool provides** the immutable append-only ADR log + supersede semantics (adr-tools / DocGuard give only the convention/template), projection-from-specs+ADRs, or the continuous drift-filer — these stay custom (§1, §13).
 
 ---
 
@@ -163,15 +197,15 @@ The constitution is **not one document** and **not all authored**. It is an **ev
 | **Logical architecture + living system spec** | **Projections** — current-state views computed from the sum of all per-issue specs (+ ADRs) | **Derived / regenerated**, never hand-edited |
 | **Human-facing reference docs** | Derived from the projections | **Deferred** (see §15) |
 
-This model resolves several things cleanly:
+This model resolves several things cleanly (note: the **principles** layer is itself a single authored file; "not one document" refers to the *whole governed set*, not the principles):
 
 - **Logical architecture can't drift from the ADRs** — it's *regenerated from* them. Governed transitively by governing the events.
 - **Deviation detection cites a specific principle or ADR** — both are the stable, addressable layer.
 - **Amendment** is either amend a **principle** (human consent) or append a **superseding ADR** (Opus proposes, human consents). The archive is never mutated — you supersede.
 
-**Projection regeneration: eager.** Projections regenerate as the **closing step of each issue's docs stage**. Always-current architecture/living-spec views (they're what humans and the constitution-checker read). A background worker validating projection-vs-event-log fidelity is **deferred** (§15).
+**Projection regeneration: eager.** Projections regenerate as the **closing step of each issue's docs stage**. (Mechanism: the `kentra` `regen` command, fired on a docs-stage `after_*` hook, reads all specs + ADRs and rewrites the views — §6b.) Always-current architecture/living-spec views (they're what humans and the constitution-checker read). A background worker validating projection-vs-event-log fidelity is **deferred** (§15).
 
-**Bootstrap — greenfield only.** A dedicated **`/constitution-init`** command (borrowing Spec-Kit's `/speckit.constitution` *interaction* pattern: Claude interviews you, drafts for approval) seeds **only the principles**. Architecture + ADRs start empty and **accumulate** through the pipeline. Brownfield constitution-extraction is **deferred**.
+**Bootstrap — greenfield only.** A dedicated **`speckit.kentra.constitution-init`** command (bare alias `/constitution-init`; borrowing Spec-Kit's `/speckit.constitution` *interaction* pattern: Claude interviews you, drafts for approval) seeds **only the principles**. Architecture + ADRs start empty and **accumulate** through the pipeline. Brownfield constitution-extraction is **deferred**.
 
 > A **skill/rule** codifies the governed-set structure (what principles vs architecture vs ADRs are for, how agents must consult them). Every planning/execution agent loads it. Because nodes are full Claude Code sessions (D2), this is a normal skill/CLAUDE.md load inside the box.
 
@@ -181,7 +215,7 @@ This model resolves several things cleanly:
 
 **Detection at three moments, one shared detector primitive** (compare an artifact against its governing source, cite violations):
 
-1. **Plan-time gate** (planning/design stage) — the proposed design/plan vs principles + architecture + ADRs, *before code exists*. (≈ Spec-Kit's `/analyze`.) **Blocks.**
+1. **Plan-time gate** (planning/design stage) — the proposed design/plan vs principles + architecture + ADRs, *before code exists*. Implemented as **`speckit.kentra.analyze`** (built on Spec-Kit's `/analyze`) emitting a `deviation.json` record that **Conductor** reads and enforces. **Blocks** (§6b).
 2. **Code-time gate** (execution) — the diff vs the constitution, on the full diff before "done." Mneme-style generation-time hook is the mechanism reference. **Blocks.**
 3. **Background sweep** — periodically scans the existing repo for drift. **Non-blocking**; files a tracked GitHub issue that re-enters the pipeline. **Deferred** (§15).
 
@@ -218,8 +252,8 @@ Mapped to Conductor: an `implementer` agent step (`provider=claudebox model=sonn
 
 **Failure handling — every loop bounded, escalation always climbs:**
 
-1. **Same implementer retries**, fed the verifier's specific rejection reasons (holds the most context). Verifier always grades against the **pre-committed contract**, never a moving target. **Cap: 2 implementer attempts** (`retry.max_attempts: 3` = first + 2 retries; or a route loop-back bounded by `limits.max_iterations`).
-2. On the 2nd failure, the milestone **routes to the Opus orchestrator** step, which triages: *code* problem (re-dispatch with sharper guidance / fresh context) or *plan* problem (the contract was mis-specified). **Opus gets up to 2 bounded attempts** — **but may route to a human gate immediately at its discretion** when it judges the problem warrants human input right away (clearly a plan/architecture/constitution issue).
+1. **Same implementer retries**, fed the verifier's specific rejection reasons (holds the most context). Verifier always grades against the **pre-committed contract**, never a moving target. **Cap: 2 retries** (`retry.max_attempts: 3` = 1 initial + 2 retries = 3 attempts total; or a route loop-back bounded by `limits.max_iterations`).
+2. After the 3rd attempt fails, the milestone **routes to the Opus orchestrator** step, which triages: *code* problem (re-dispatch with sharper guidance / fresh context) or *plan* problem (the contract was mis-specified). **Opus gets up to 2 bounded attempts** — **but may route to a human gate immediately at its discretion** when it judges the problem warrants human input right away (clearly a plan/architecture/constitution issue).
 3. **Human escalation** → `human_gate` → GitHub `Needs Input`. A plan problem proposes a **plan revision** (a user-approved artifact → may loop back into planning).
 4. **Final whole-issue integration check** after all milestones pass — against the *original requirements* (milestones can each pass yet not compose). The **code-time constitution check** runs here on the full diff. Failure escalates Opus → human.
 
@@ -280,8 +314,8 @@ This is harness-specific, so it's the one piece to build — and Conductor makes
 | Issue tracking + coarse state | **GitHub Issues + Projects v2** | GitHub adapter via `gh` `script` steps (read type, claim, transition) |
 | Observability / cost / traces | **LiteLLM (pinned) + Langfuse / OTel** | tagging + dashboards wiring |
 | Multi-run "issue board" | Conductor event bus + GitHub Projects + Conductor's per-run view | thin aggregator service + frontend |
-| Spec-folder + living spec | **OpenSpec** delta/archive *model* | the func/NFR/design/plan layout |
-| ADR substrate | **adr-tools / Log4brains** one-file-per-decision *convention* | — |
+| Spec-folder + living spec | **Spec-Kit** (extended via the committed `kentra` extension+preset; OpenSpec delta/archive as a *reference model* only) | the `kentra` bundle: func/NFR/design/plan templates + intent-named commands + docs-stage projection hook |
+| ADR substrate | **adr-tools / Log4brains** convention; **DocGuard** ADR template | the immutable append-only log + supersede semantics (build) |
 | Code-time constitution enforcement | **Mneme** PreToolUse-hook *pattern* | the checker integration |
 | Governed multi-doc constitution + amendment gate | **nothing exists** | **build** |
 | Drift detector (continuous, files issues) | **nothing exists** | **build (deferred to background worker)** |
@@ -325,8 +359,10 @@ This is harness-specific, so it's the one piece to build — and Conductor makes
 | 6 | Human-facing reference-doc generation | Deferred |
 | 7 | Engine: Conductor adopted (§0). Thin-custom off-ramp if the additive surface turns invasive | Stay on Conductor; revisit only if forced into core changes |
 | 8 | Observability stack specifics (Langfuse vs Phoenix vs Helicone; self-host topology) | Lean Langfuse (MIT, OTel-native, LiteLLM callback); confirm at build |
-| 9 | Multi-model runtime roadmap (which non-Claude runtimes, when) — §0.1 | Deferred — claudebox first; keep the provider seam narrow |
+| 9 | Multi-*model-runtime* roadmap (which non-Claude model runtimes, when) — §0.1. *Tooling agent-agnosticism is already first-class (§0.4); this row is only about model runtimes.* | Deferred — claudebox first; keep the provider seam narrow |
 | 10 | Dashboard build vs adopt for the issue-board; embedded-library vs JSONL-tail ingestion | Lean embedded-library aggregator + GitHub Projects |
+
+> **Resolved 2026-06-16 (see §6b & §0.4):** planning/spec tooling = **extend Spec-Kit** via the committed `kentra` bundle; **#1 gate-action seam** = a structured record file in the spec-folder, read + enforced by Conductor; **runtime-agnostic** = first-class v1 (supersedes the §0.1 defer-lean); **v1 governance scope** = ADR append-only log + projection regeneration + amendment gate + plan-time deviation gate all ship in v1 (only the continuous drift-filer (#3) and brownfield (#4) remain deferred). **#7 engine** stays Conductor.
 
 ---
 
@@ -336,3 +372,4 @@ This is harness-specific, so it's the one piece to build — and Conductor makes
 - **Library analysis:** [references/library-analysis.md](./references/library-analysis.md), [references/technologies.md](./references/technologies.md).
 - **Workflow/DAG layer:** [workflow-orchestration-analysis.md](./workflow-orchestration-analysis.md).
 - **Spec-Kit ecosystem research (2026-06-16):** full report at [references/spec-kit-ecosystem-research.md](./references/spec-kit-ecosystem-research.md) — 23 verified claims / 23 sources / 2 refuted. Key findings: no single tool covers all four target features. Closest single matches: **Spec Kitty** (feature 1), **OpenSpec** (feature 4). ADR substrate: **adr-tools / Log4brains**. Generation-time enforcement: **Mneme HQ**. The **governed multi-doc constitution with amendment gate** and the **continuous background drift scanner that files issues** are unmet by any tool — confirmed gaps we build.
+- **Spec-Kit extension-system & catalog investigation (2026-06-16, this session):** source-level review of Spec-Kit v0.10's extension API (`extension.yml`, `before_/after_` lifecycle hooks on all 9 phases, script/`gh` capability, Extensify scaffolder) and the ~172-entry community catalog. Verified: `/speckit.analyze` is a reusable plan-time deviation engine (extracts MUST/SHOULD, flags CRITICAL, cites locations); projection regeneration exists in the wild (`spec-kit-arch`, `repoindex`); an approval-state model exists (`spec-validate`); a bounded-gate pattern exists (`superpowers-bridge`). Confirmed limits: extension hooks are **non-blocking / agent-honored** (hard gates must live in Conductor), the `effect` tag is advisory (not a sandbox), `.specify/` survival across `init --force` is unspecified, and **no extension provides** the immutable ADR substrate, projection-from-specs+ADRs, the Projects-v2 claim, or a continuous drift-filer. All relevant extensions are single-author/low-star — **mined as reference patterns, not taken as dependencies**. Basis for the §6b decision.
