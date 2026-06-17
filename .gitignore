@@ -1,0 +1,8 @@
+# OS / editor junk
+.DS_Store
+*.log
+.idea/
+
+# External reference repos cloned for analysis (have their own .git — not vendored)
+references/conductor/
+references/fabro/

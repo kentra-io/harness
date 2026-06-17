@@ -1,0 +1,20 @@
+image: claudebox-agent:latest
+resources:
+  cpus: 2
+  memory: 8g
+  tmpfs_size: 2g
+network:
+  expose_host_ports: []
+env: {}
+claude:
+  model: opus
+  max_turns: 50
+  system_prompt: ""
+  idle_notification: true
+  session_capture: true
+  continuous_learning: true
+provisioning:
+  bind_claude_dir: true
+  elements: []
+docker:
+  testcontainers: false

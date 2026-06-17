@@ -286,9 +286,11 @@ The documentation domain *is* the event-sourced constitution model (§7):
 
 Under D2 the engine doesn't see model calls, so telemetry lives **beneath the runtime** and is **engine-agnostic**. Two concerns, handled separately:
 
-### Telemetry / cost / traces — adopt OSS
+> **DECIDED (2026-06-17) — full decision record in [observability.md](./observability.md).** The telemetry stack is settled: **LiteLLM (pinned gateway) + Langfuse (self-hosted obs/eval/persistence) + Claude Code native OTel.** This resolves [§15 open-decision #8](#15-open-decisions-deliberately-deferred). Langfuse won the obs/eval slot decisively: it is now **ClickHouse-backed** (acquired 2026-01-16, active, public MIT/OSS/self-host commitment) and has the deepest OSS eval layer (LLM-judge + code scorers + **datasets + experiments** = the eval-of-configs half of the goal set). **Helicone was rejected** (acquired by Mintlify 2026-03-03 → maintenance mode; its only Claude-Code-fitting ingress is a deprecated legacy proxy; cloud/enterprise-first vs the local-first priority). **TensorZero rejected** (reported unmaintained; function-shaped not session-shaped). See observability.md §3–§4 for rationale and build-time verification items.
+
+### Telemetry / cost / traces — adopt OSS *(decided — see observability.md)*
 - **LiteLLM proxy (PINNED version)** is the single gateway every runtime points at (`ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` for Claude Code; native/OpenAI format for other runtimes). It provides cost, tokens, latency, logging, routing, fallbacks, budgets, guardrails, an admin UI, and Prometheus `/metrics`. **Pin the version** and verify the image digest — releases **1.82.7 / 1.82.8 shipped credential-stealing malware**. Also confirm spend tracking fires for native Anthropic `/v1/messages` passthrough (a reported 2026 gap) by **defining each model explicitly in `config.yaml`**; set `CLAUDE_CODE_ATTRIBUTION_HEADER=0` if caching at the proxy.
-- **Langfuse** (MIT, self-host, OTel-native; LiteLLM has a native Langfuse callback) for traces / sessions / per-issue cost analytics. Alternatives evaluated: **Arize Phoenix** (most OTel-native, but ELv2 license), **Helicone** (proxy-style).
+- **Langfuse** (MIT, self-host, OTel-native, ClickHouse-backed; LiteLLM has a native `langfuse_otel` callback) for traces / sessions / per-issue cost analytics + the eval/dataset/experiment layer. *(Arize Phoenix — most OTel-native but ELv2 — and Helicone were evaluated and not chosen; see observability.md §3.)*
 - **Claude Code native OpenTelemetry** (`CLAUDE_CODE_ENABLE_TELEMETRY=1` + OTLP env) for span-level depth on Claude nodes; can ship to the same Langfuse/Grafana backend.
 - **Join by issue:** every run is tagged (LiteLLM metadata / `X-Claude-Code-Session-Id` / OTel resource attr = issue number), so cost/traces are queryable per issue.
 
@@ -358,11 +360,13 @@ This is harness-specific, so it's the one piece to build — and Conductor makes
 | 5 | `chore` / `question` workflows; per-project workflow overrides | Deferred — feature + bug only in v1 |
 | 6 | Human-facing reference-doc generation | Deferred |
 | 7 | Engine: Conductor adopted (§0). Thin-custom off-ramp if the additive surface turns invasive | Stay on Conductor; revisit only if forced into core changes |
-| 8 | Observability stack specifics (Langfuse vs Phoenix vs Helicone; self-host topology) | Lean Langfuse (MIT, OTel-native, LiteLLM callback); confirm at build |
+| 8 | ~~Observability stack specifics (Langfuse vs Phoenix vs Helicone; self-host topology)~~ **RESOLVED 2026-06-17** | **DECIDED — LiteLLM + Langfuse + Claude Code OTel; see [observability.md](./observability.md) & §12a.** Build-time items (minimal local-first footprint, MIT/`/ee` durability, cost-attribution no-double-count) tracked in observability.md §4. |
 | 9 | Multi-*model-runtime* roadmap (which non-Claude model runtimes, when) — §0.1. *Tooling agent-agnosticism is already first-class (§0.4); this row is only about model runtimes.* | Deferred — claudebox first; keep the provider seam narrow |
 | 10 | Dashboard build vs adopt for the issue-board; embedded-library vs JSONL-tail ingestion | Lean embedded-library aggregator + GitHub Projects |
 
 > **Resolved 2026-06-16 (see §6b & §0.4):** planning/spec tooling = **extend Spec-Kit** via the committed `kentra` bundle; **#1 gate-action seam** = a structured record file in the spec-folder, read + enforced by Conductor; **runtime-agnostic** = first-class v1 (supersedes the §0.1 defer-lean); **v1 governance scope** = ADR append-only log + projection regeneration + amendment gate + plan-time deviation gate all ship in v1 (only the continuous drift-filer (#3) and brownfield (#4) remain deferred). **#7 engine** stays Conductor.
+>
+> **Resolved 2026-06-17 (see [observability.md](./observability.md) & §12a):** **#8 observability stack** = **LiteLLM (pinned gateway) + Langfuse (self-hosted obs/eval/persistence) + Claude Code native OTel.** Helicone (→ Mintlify maintenance mode) and TensorZero (reported unmaintained) evaluated and rejected.
 
 ---
 

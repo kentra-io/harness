@@ -58,6 +58,14 @@ dag:
     - { name: D, dependencies: [B, C], template: ... }
 ```
 
+## Optional / candidate components (not yet decided)
+
+These are noted as options to revisit — **not** part of the validated stack above yet.
+
+- **DBOS (durable execution engine) — possibly recommended, optional.** Postgres-backed durable-execution *library* ([`dbos-transact-ts`](https://github.com/dbos-inc/dbos-transact-ts) ~1.2k⭐, [`dbos-transact-py`](https://github.com/dbos-inc/dbos-transact-py) ~1.4k⭐, MIT; also Java/Go). You annotate `@DBOS.workflow()` / `@DBOS.step()` and it checkpoints state to Postgres, so workflows **survive crashes/restarts and resume exactly where they left off**; also provides durable queues and cron scheduling — no separate orchestrator server (the explicit contrast with Temporal, which needs an external worker+server). **Where it fits:** the *durability/resumability* layer, complementary to Beads — Beads gives the DAG + `ready` set; DBOS would make the orchestrator's execution itself crash-resilient (cf. Fabro's "git-based checkpointing for resumable runs"). **Open question:** whether the harness needs durable execution given it runs inside Claude Code, and whether a Postgres dependency is worth it. See [DBOS Transact](https://www.dbos.dev/dbos-transact).
+
+- **Fabro (workflow definition + integration) — optional.** Already profiled in [references/technologies.md](./references/technologies.md) (~960⭐, MIT). An **alternative way to *define* workflows and integrate them with the harness**: deterministic workflow graphs authored in Graphviz **DOT** (branching, loops, human-in-the-loop gates), multi-model routing, sandboxed execution with git-based checkpointing, REST API + web UI. **Where it fits:** a substitute for the "Argo-style YAML → Beads compiler → subagents" path — i.e. Fabro could own both the definition format (DOT instead of YAML) and the orchestration runtime. **Caveat:** it's a separate platform (single Rust binary, runs *beside* Claude Code rather than inside it), so adopting it trades the "entirely inside Claude Code" constraint for an off-the-shelf graph engine.
+
 ## Open decisions for next session
 
 - **YAML schema:** adopt Argo's `dependencies: [A]` edge form vs. Conductor's route/`when` form. (Argo is the cleaner explicit-DAG match.)
