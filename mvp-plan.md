@@ -13,13 +13,13 @@
 | **S1** | MVP ambition | **Full v1 as written in planning.md** — all four governance pieces, both workflows, issue-level concurrency, thin dashboard. *Not* a thin slice. |
 | **S2** | First workflow built | **Feature first** (the full refine→design→plan→execute pipeline) as the proving ground; `bug.yaml` follows in the same v1. |
 | **S3** | Concurrency | **Multi-issue parallel from the start** — the claim-mutex, agent identity, and concurrent runs are in-scope. |
-| **S4** | Observability depth | **Stand-up + tagging only.** Full decided stack (LiteLLM + Langfuse + Claude Code OTel) via local compose, issue-ID tagging, eyeball traces/cost in Langfuse UI. **No** custom cost-rollups, complexity-estimation, or config-eval datasets in MVP. |
+| **S4** | Observability depth | **Stand-up + tagging only**, and **sequenced after the planning domain** (S10). Full decided stack (LiteLLM + Langfuse + Claude Code OTel) via local compose, issue-ID tagging, eyeball traces/cost in Langfuse UI. **No** custom cost-rollups, complexity-estimation, or config-eval datasets in MVP. |
 | **S5** | Human approval gate | **Interactive agent session**, agent-agnostic — see §2. Planning stages are interactive; the human approves conversationally. No custom approval web-UI on the critical path. |
 | **S6** | Control flow | **Interactive planning, headless execution.** One Conductor workflow, **two driving modes** — see §2. |
 | **S7** | Execution launch | **Host watcher daemon** starts the headless execution run once a plan is approved + claimed. |
 | **S8** | Execution transitions | **Conductor-native routing** in the headless loop (verifier output drives routes; final transition via `gh` script step). Explicit MCP transition calls are reserved for the interactive half. |
 | **S9** | Conductor consumption | **Tiny-patch fork + external plugins** (pin by SHA) — see §4. |
-| **S10** | Build sequencing | **Walking skeleton first** — see §6. |
+| **S10** | Build sequencing | **Planning domain first, standalone** (no engine, no obs), **then dogfood it** to plan the rest of the system — see §6. *(Revised 2026-06-25 from the earlier "walking skeleton first"; engine + execution + obs are planned using the planning vertical itself.)* |
 | **S11** | Target project | First instance is **`kafka-dq`** (greenfield, not yet created). The **harness is standalone and portable** across projects — nothing `kafka-dq`-specific lives in it (§5). |
 | **S12** | Topology | **Fully local.** Everything on the dev machine: Conductor control-plane + host daemon + Conductor-MCP on the host, agent sessions in `cb` boxes, LiteLLM + Langfuse via a local compose profile. No cloud in MVP. |
 
@@ -62,6 +62,8 @@ This is the load-bearing refinement of [planning.md](./planning.md) made this se
 - **Mode B — Conductor is its native active engine**: it *spawns* headless steps via `ClaudeboxProvider` and routes on their output.
 
 **Agent-agnostic by construction.** The interactive half talks to Conductor only through the **Conductor-MCP** server and the **structured gate records** (`approval-state.json` / `deviation.json`) in the spec-folder — never a Claude-specific UI. Any MCP-capable agent (Claude Code, Cursor, Codex, …) can drive planning, satisfying the runtime-agnostic v1 requirement ([planning.md §0.4](./planning.md), [tasks/lessons.md](./tasks/lessons.md)).
+
+> **Build order note (S10).** Phase 1 builds **Mode A *minus the engine*** — the interactive planning flow + governance + the gate *records*, with the human-in-the-loop honoring surfaced deviations. **Hard enforcement** (Conductor reading the records and *blocking*) and the **state authority** arrive when the engine is wired in Phase 2. The seam (structured records) is identical either way, so this is additive, not rework.
 
 ---
 
@@ -124,44 +126,46 @@ The harness is a **standalone tool**; `kafka-dq` is just its first tenant. The s
 
 ---
 
-## 6. Phased build — walking skeleton first
+## 6. Phased build — planning domain first, then dogfood
 
-Each phase has a hard **Definition of Done**; nothing is "complete" without proving it (per the user's verification-before-done principle).
+**Strategy (S10).** Build the **standalone planning vertical** first — no engine, no observability. It is the best-specified and most differentiating part of the system, and once it exists it becomes **the tool we use to plan everything else** (engine integration, execution, obs, dashboard). Each phase has a hard **Definition of Done**; nothing is "complete" without proving it (per the user's verification-before-done principle).
 
-### Phase 1 — Walking skeleton (de-risk the integration spine)
-Stand up the whole spine **end-to-end with no-op/stub stages**, so every integration unknown is hit on day one.
-- Fork + pin Conductor; apply the `AgentDef.metadata` patch; **spike the externally-driven wait-step seam** (§7).
-- `ClaudeboxProvider` (minimal): `cb run` + `cb exec … claude -p` running a trivial echo step; parse the stream into `event_callback`.
-- GitHub adapter: read type, **claim via one bot + lock label**, transition (`gh` script steps).
-- Conductor-MCP **skeleton**: `get_state` / `submit_artifact` / `run_gate` / `record_approval` / `request_transition` reading+writing spec-folder records.
-- Host watcher daemon: detect *planned & claimed* → `engine.run()`; subscribe to the event bus.
-- Obs stack: local compose for **LiteLLM (pinned + digest-verified)** + **Langfuse** + Claude Code OTel; point a box's `claude` at `ANTHROPIC_BASE_URL`; inject the **issue-ID tag**.
-- `feature.yaml` + `bug.yaml` with **stub** stages.
-
-**DoD:** a GitHub issue flows *idea → done* through stub stages; an interactive session advances the planning stubs via Conductor-MCP; one headless stub step runs in a `cb` box; a trace **and a cost row tagged by issue** appear in Langfuse; **two issues run concurrently** with the lock-label mutex holding.
-
-### Phase 2 — Real interactive planning (Mode A)
-- `kentra` bundle: preset templates (requirements **func + NFR distinct**, design, plan with **per-milestone validation contracts**) + intent-named commands + bare aliases.
+### Phase 1 — Standalone planning vertical (no engine, no obs)
+The interactive idea→plan flow + the event-sourced constitution, producing governed, user-approved artifacts in the issue's spec-folder. This is **Mode A minus hard enforcement** (§2 build-order note): the plan-time gate *surfaces* deviations and the human-in-the-loop honors them; the engine that *blocks* comes in Phase 2.
+- `kentra` bundle: preset templates (requirements **func + NFR distinct**, design, plan with **per-milestone validation contracts**) + intent-named commands (`requirements`/`design`/`plan`/`analyze`/`adr`/`regen`/`constitution-init`) + bare aliases.
 - `constitution-init`: greenfield principles interview → `.specify/memory/`.
-- Plan-time deviation gate: `speckit.kentra.analyze` → `deviation.json` → **Conductor enforces** block/proceed at the gate step.
-- Wire the interactive session: human runs an agent session with the `kentra` skills + Conductor-MCP configured; refine → design → plan, each writing `approval-state.json` on conversational approval.
+- Event-sourced constitution core: immutable append-only **ADR log + supersede** semantics; **projections** (logical architecture + living spec) + **`regen`** (read all specs + ADRs → rewrite projections).
+- Plan-time deviation gate: `speckit.kentra.analyze` → emits `deviation.json` (surface + human-honored; **no engine block yet**).
+- Amendment gate (HARD RULE): human-consent loop — works interactively from day one (it was always a human decision, §8 planning.md).
+- The interactive flow: a human runs an agent session with the `kentra` skills configured; refine → design → plan, each writing the artifact + `approval-state.json` on conversational approval.
 
-**DoD:** a real feature goes *idea → planned* interactively; the constitution is bootstrapped; all three artifacts are produced and user-approved; a **deliberately planted violation is blocked** by the plan-time gate.
+**DoD:** on a greenfield target, a human drives an issue *idea → plan* interactively; the constitution is bootstrapped; all three artifacts (requirements/design/plan) are produced, governed, and user-approved in the spec-folder; an ADR can be appended and projections regenerated; a **deliberately planted violation is surfaced** by `analyze`; an amendment requires explicit human consent. Agent-agnostic: the flow uses only the `kentra` commands + spec-folder records (no Claude-specific or engine dependency).
 
-### Phase 3 — Real headless execution (Mode B)
-- `ClaudeboxProvider` (real): per-step model selection — `implementer = Sonnet`, `verifier = Haiku`, `orchestrator = Opus`.
-- Per-milestone loop in the single worktree; **bounded retry** (3 attempts) fed the verifier's rejection reasons; **Opus orchestrator escalation** (2 attempts, may go straight to human at its discretion); `human_gate` → GitHub `Needs Input`.
-- Final whole-issue **integration check vs original requirements** + **code-time constitution check** on the full diff.
-- Conductor-native routing throughout; final transition via `gh` script step.
+### 🐕 Milestone — dogfood: plan the rest of the system
+Use the Phase-1 planning vertical to **plan Phases 2–4 of the harness itself** (engine integration, execution domain, obs, dashboard) as governed requirements/design/plan artifacts. This both delivers the plan for the remaining system *and* is the first real exercise of the planning domain. *(Caveat: the harness repo is brownfield, so this uses the `kentra` planning commands conversationally rather than the greenfield `constitution-init` path; brownfield constitution extraction stays deferred — §8.)*
 
-**DoD:** a planned feature executes headlessly through its milestones; a deliberate verify-fail walks retry → orchestrator → human gate; integration + code-time constitution checks run on the full diff; the issue reaches *done*.
+### Phase 2 — Engine integration (Mode A hard enforcement + lifecycle state)
+- Conductor **tiny-patch fork** (§4): `AgentDef.metadata`; **spike the externally-driven wait-step seam** (R1, §7).
+- **Conductor-MCP** server: `get_state` / `submit_artifact` / `run_gate` / `record_approval` / `request_transition` over the spec-folder records.
+- GitHub adapter: read type, **claim via one bot + lock label**, transition (`gh` script steps).
+- Promote the Phase-1 gates from *surface-and-honor* to **hard enforcement**: Conductor reads `deviation.json` / `approval-state.json` and blocks/proceeds; lifecycle state becomes the engine's run-state.
 
-### Phase 4 — Governance depth + bug flow + dashboard
-- Governance core: immutable append-only **ADR log + supersede** semantics; **projection regeneration** (`regen` on the docs-stage `after_*` hook); **amendment gate** (HARD RULE — Opus proposes, human approves).
-- `bug.yaml` (real): **repro-first** failing test = requirement *and* contract; design skipped by default; **promotion hatch** to the feature pipeline when Opus judges the fix touches architecture.
+**DoD:** the same *idea → planned* flow now runs through Conductor as one workflow (Mode A); the plan-time gate **hard-blocks** a planted violation; two issues claim+advance concurrently with the lock-label mutex holding.
+
+### Phase 3 — Execution domain (Mode B, headless)
+- `ClaudeboxProvider`: `cb run` box+worktree, `cb exec … claude -p`, stream→events; per-step model (`implementer = Sonnet`, `verifier = Haiku`, `orchestrator = Opus`).
+- Host watcher daemon: *plan-approved & claimed* → `engine.run()`; subscribe to the event bus.
+- Per-milestone loop; **bounded retry** (3 attempts) fed verifier rejections; **Opus escalation** (2 attempts, may go straight to human); `human_gate` → GitHub `Needs Input`.
+- Final whole-issue **integration check vs original requirements** + **code-time constitution check** on the full diff; Conductor-native routing; final transition via `gh` script step.
+- `bug.yaml`: **repro-first** failing test = requirement *and* contract; design skipped; **promotion hatch** to the feature pipeline.
+
+**DoD:** a planned feature executes headlessly through milestones; a deliberate verify-fail walks retry → orchestrator → human gate; integration + code-time constitution checks run; the issue reaches *done*; a bug runs repro→fix→done.
+
+### Phase 4 — Observability + dashboard
+- Obs stack: local compose for **LiteLLM (pinned + digest-verified)** + **Langfuse** + Claude Code OTel; route boxes via `ANTHROPIC_BASE_URL`; inject the **issue-ID tag**.
 - Thin dashboard: live multi-run issue-board overlay off the host daemon's event-bus subscription — the **"where is everything / what needs me"** view. It **surfaces** pending gates and **routes** the human into the interactive session that owns the decision (artifact approval stays conversational per S5); it is **not** itself the approval surface. Reuse Conductor's per-run web view as the drill-down; GitHub Projects as the durable board.
 
-**DoD:** full feature **and** bug lifecycles run; an ADR is appended and a projection regenerated; an amendment is **proposed and human-approved** (and a self-approval attempt is rejected); the dashboard shows live multi-run state and correctly surfaces a pending gate, routing into the interactive session that resolves it.
+**DoD:** a trace **and a cost row tagged by issue** appear in Langfuse for a full run; the dashboard shows live multi-run state and correctly surfaces a pending gate, routing into the interactive session that resolves it.
 
 ---
 
@@ -169,14 +173,14 @@ Stand up the whole spine **end-to-end with no-op/stub stages**, so every integra
 
 | # | Item | Phase | Why it matters |
 |---|---|---|---|
-| **R1** | **Conductor "externally-driven step waits on MCP input"** — can a planning stage be a step that Conductor *waits on* while the interactive session advances it (likely via `human_gate` repurposing), without core edits? | 1 | The whole Mode-A model rests on this. If unreachable, it becomes part of the fork patch. |
-| **R2** | **`AgentDef.metadata` reachability** — current schema is `extra="forbid"`; confirm the one-line field is the only edit needed for correlation keys. | 1 | Determines fork-patch size. |
-| **R3** | **LiteLLM Anthropic `/v1/messages` passthrough spend tracking** (reported 2026 gap) — **define each model explicitly in `config.yaml`**; confirm cost rows fire. | 1 | Cost-per-issue depends on it. |
-| **R4** | **LiteLLM supply chain** — pin version + **verify image digest** (1.82.7 / 1.82.8 shipped credential-stealing malware); `CLAUDE_CODE_ATTRIBUTION_HEADER=0` if caching at the proxy. | 1 | Security. |
-| **R5** | **Langfuse local footprint** — Postgres + ClickHouse (+ Redis + S3/MinIO); confirm a **minimal single-node compose** is comfortable on the dev machine; document the slim profile. | 1 | The main concession to local-first ([observability.md §4.1](./observability.md)). |
-| **R6** | **Cost authority / no double-count** — full Claude Code session groups under one `sessionId`; decide LiteLLM-vs-Langfuse as the authoritative cost source. | 1–2 | Correct per-issue rollups. |
-| **R7** | **Concurrent `engine.run()`** under the host daemon — N runs, one event bus per run, joinable by issue tag. | 1 | Multi-issue parallel. |
-| **R8** | **`.specify/` survival across `init --force`** (unspecified upstream) — confirm the committed bundle isn't clobbered. | 2 | Portability/reproducibility. |
+| **R8** | **`.specify/` survival across `init --force`** (unspecified upstream) — confirm the committed bundle isn't clobbered. | 1 | Portability/reproducibility; first thing the planning vertical touches. |
+| **R1** | **Conductor "externally-driven step waits on MCP input"** — can a planning stage be a step that Conductor *waits on* while the interactive session advances it (likely via `human_gate` repurposing), without core edits? | 2 | The whole Mode-A model rests on this. If unreachable, it becomes part of the fork patch. |
+| **R2** | **`AgentDef.metadata` reachability** — current schema is `extra="forbid"`; confirm the one-line field is the only edit needed for correlation keys. | 2 | Determines fork-patch size. |
+| **R7** | **Concurrent `engine.run()`** under the host daemon — N runs, one event bus per run, joinable by issue tag. | 3 | Multi-issue parallel. |
+| **R3** | **LiteLLM Anthropic `/v1/messages` passthrough spend tracking** (reported 2026 gap) — **define each model explicitly in `config.yaml`**; confirm cost rows fire. | 4 | Cost-per-issue depends on it. |
+| **R4** | **LiteLLM supply chain** — pin version + **verify image digest** (1.82.7 / 1.82.8 shipped credential-stealing malware); `CLAUDE_CODE_ATTRIBUTION_HEADER=0` if caching at the proxy. | 4 | Security. |
+| **R5** | **Langfuse local footprint** — Postgres + ClickHouse (+ Redis + S3/MinIO); confirm a **minimal single-node compose** is comfortable on the dev machine; document the slim profile. | 4 | The main concession to local-first ([observability.md §4.1](./observability.md)). |
+| **R6** | **Cost authority / no double-count** — full Claude Code session groups under one `sessionId`; decide LiteLLM-vs-Langfuse as the authoritative cost source. | 4 | Correct per-issue rollups. |
 
 ---
 
