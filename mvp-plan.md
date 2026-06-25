@@ -20,7 +20,7 @@
 | **S8** | Execution transitions | **Conductor-native routing** in the headless loop (verifier output drives routes; final transition via `gh` script step). Explicit MCP transition calls are reserved for the interactive half. |
 | **S9** | Conductor consumption | **Tiny-patch fork + external plugins** (pin by SHA) — see §4. |
 | **S10** | Build sequencing | **Planning domain first, standalone** (no engine, no obs), **then dogfood it** to plan the rest of the system — see §6. *(Revised 2026-06-25 from the earlier "walking skeleton first"; engine + execution + obs are planned using the planning vertical itself.)* |
-| **S11** | Target project | First instance is **`kafka-dq`** (greenfield, not yet created). The **harness is standalone and portable** across projects — nothing `kafka-dq`-specific lives in it (§5). |
+| **S11** | Target project | First instance is **`kafka-dq`** — **created now as an empty greenfield shell** to be Phase-1's testbed (§6). Phase 1 produces its real constitution + first issue artifacts. The **harness is standalone and portable** across projects — nothing `kafka-dq`-specific lives in it (§5). Its **stack is an *output* of the planning vertical's design stage** (an ADR), not a pre-chosen input. |
 | **S12** | Topology | **Fully local.** Everything on the dev machine: Conductor control-plane + host daemon + Conductor-MCP on the host, agent sessions in `cb` boxes, LiteLLM + Langfuse via a local compose profile. No cloud in MVP. |
 
 ---
@@ -122,7 +122,7 @@ The harness is a **standalone tool**; `kafka-dq` is just its first tenant. The s
 - **Each target project repo commits** (project-specific, self-contained): `.specify/` (pinned Spec-Kit tooling + the `kentra` bundle + `memory/` constitution) and `.claudebox/Dockerfile` (the project's stack + Spec-Kit CLI install), plus per-issue spec-folders ([planning.md §6b](./planning.md)). A target project is reproducible **without** the harness.
 - **Nothing `kafka-dq`-specific enters the harness.** Stack/language specifics live only in `kafka-dq`'s committed `.claudebox/` + `.specify/memory/` (constitution). `constitution-init` interviews to seed `kafka-dq`'s principles greenfield.
 
-> `kafka-dq` does not exist yet. The design is written against a **representative greenfield profile** (local-first service with testcontainers, per [planning.md §11](./planning.md) — which makes every bug reproducible). Its concrete stack is a build-time input confirmed when the repo is created.
+> `kafka-dq` is **created now as an empty greenfield shell** (the Phase-1 testbed, §6). Its concrete stack is **not pre-chosen** — it falls out of the planning vertical's design stage as an ADR, targeting a local-first service with testcontainers ([planning.md §11](./planning.md) — which makes every bug reproducible). The shell needs only enough to commit `.specify/` + `.claudebox/`.
 
 ---
 
@@ -199,7 +199,7 @@ Use the Phase-1 planning vertical to **plan Phases 2–4 of the harness itself**
 
 ## 9. Open items to confirm at build time
 
-- **`kafka-dq` stack** — concrete language/runtime for `.claudebox/Dockerfile` + testcontainers, set when the repo is created (§5).
+- **`kafka-dq` stack** — *decided by* the planning vertical's design stage (an ADR), not pre-set; the `.claudebox/Dockerfile` + testcontainers setup is finalized when execution lands (Phase 3). The empty shell is created now (§5, §6).
 - **Conductor↔GitHub status-sync timing** beyond claim / needs-input / closed ([planning.md §15 #2](./planning.md)).
 - **Bot identity provisioning** — the single GitHub App/bot account + the lock-label scheme details (§S3; [planning.md §4](./planning.md)).
 - **Conductor-MCP tool surface** — exact tool list/contract (skeleton in Phase 1, firmed in Phase 2).
