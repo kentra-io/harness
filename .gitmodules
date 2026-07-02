@@ -1,0 +1,4 @@
+[submodule "adr-sourced-constitution"]
+	path = adr-sourced-constitution
+	url = git@github.com:kentra-io/adr-sourced-constitution.git
+	branch = main
