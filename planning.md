@@ -157,6 +157,10 @@ Issues enter two ways — a human **files a GitHub issue**, or a **Claude conver
 
 ## 6b. Spec-Kit adoption — the concrete plan (decided 2026-06-16)
 
+> **UPDATE 2026-07-02 — the constitution/ADR/governance pieces were split OUT into a standalone primitive.** The governance items described below (immutable ADR log, projection/`regen`, `constitution-init`, plan-time deviation gate) have been **extracted from the `kentra` Spec-Kit bundle into a standalone, framework-neutral primitive — [`adr-sourced-constitution`](./adr-sourced-constitution.md) (authoritative).** It ships as a **Go CLI + agent-agnostic skills + thin per-framework adapters** (Spec-Kit is now just *one* adapter), integrating by default via a `constitution/` folder + an AGENTS.md/CLAUDE.md pointer. The **`kentra` bundle below still stands for the *lifecycle* layer** (requirements/design/plan preset + commands) only.
+>
+> **Verified corrections to the text below (2026-06-30/07-02):** the reference extensions **`spec-validate`, `architecture-guard`, and `Mneme HQ` could not be verified to exist** — treat as misremembered; **bare command aliases are NOT supported** (commands must be `speckit.{ext}.{cmd}`); `specify init --force` **clobbers** `.specify/templates/` + `.specify/scripts/` (all customization must ship as an extension/preset, not hand-edited core). The ADR record now also carries a **`status`** field (minimal-MADR-compliant) with immutability enforced by a field-scoped guard — see the standalone spec.
+
 **Decision: the planning/spec layer is built by EXTENDING GitHub Spec-Kit** (MIT, Python CLI, agent-agnostic), packaged as a custom **`kentra` extension + preset bundle**. Conductor still owns orchestration and *all hard enforcement*; Spec-Kit owns artifact structure, the lifecycle command/hook surface, and the `/analyze` plan-time engine. This supersedes §6's earlier *build-the-layout-from-scratch* lean (the four reference models there are retained as references, not reversed).
 
 **The capability line (load-bearing).** A Spec-Kit extension is a **structuring + lifecycle-triggering + doc-generation veneer**; **Conductor is the enforcement kernel.** Extension hooks are *non-blocking / agent-honored* (no runtime stop), and the catalog `effect` tag is advisory, not a sandbox. Therefore:
@@ -187,6 +191,8 @@ Issues enter two ways — a human **files a GitHub issue**, or a **Claude conver
 ---
 
 ## 7. The constitution — event-sourced governance
+
+> **UPDATE 2026-07-02:** the constitution is now fully specified as a standalone primitive in [`adr-sourced-constitution.md`](./adr-sourced-constitution.md) (**authoritative**). Refinements since this section: ADRs are **minimal-MADR-compliant with a `status` field**; the **projection is `constitution.md`** — the governed "HOW", rendered deterministically from the *active* ADR set — while the **living-spec** (architecture view synthesized from feature-specs) is a **separate** projection/module; and the whole thing is **framework-neutral** (Spec-Kit is one adapter). The event-sourcing model described below stands.
 
 The constitution is **not one document** and **not all authored**. It is an **event-sourced system**:
 
