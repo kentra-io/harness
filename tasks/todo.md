@@ -13,7 +13,7 @@ Plan of record: `spec-lifecycle/implementation-plan.md` (Option B, pure Go). Wor
 - [x] M4 — archive + baseline ledger — **DONE** (commits `8f16e89` + `1373316`, verified round 2; CI green all legs after testutil fix)
 - [x] M5 — guard — **DONE** (commit `694b745`, verified round 1, 0 fixes; CI green all legs first try — testutil discipline worked)
 - [x] M6 — init + integration wiring — **DONE** (commit `5bcf1f7`, verified round 3 after 2 fix rounds via recovery workflow `wf_dfd30a87-93d`; original `wf_b0ee51ab-93e` died to infra errors — partial work salvaged + gap-filled, not rewritten; CI green all 7 jobs incl. Windows first-try)
-- [x] M7 (scripted scope) — Skill bodies + dogfood — **DONE** (commit `3dbffd9`, verified round 3 after 2 fix rounds, workflow `wf_a7040d33-9c9`; CI green all 8 jobs incl. first self-guard run; *live-agent spike §12.1 EXCLUDED → escalation to user — needed to close the full M7 DoD*)
+- [x] M7 — Skill bodies + dogfood — **DONE incl. §12.1 live spike (Claude Code leg, 2026-07-06)** (commit `3dbffd9`, verified round 3 after 2 fix rounds, workflow `wf_a7040d33-9c9`; CI green all 8 jobs incl. first self-guard run; live spike = user drove issue #3 end-to-end → `e057640` + fan-out repair `518f1cb`; second-runtime leg deferred)
 - [x] M8 (prep scope) — Distribution — **DONE** (commit `2fda680`, verified round 1, 0 fixes, workflow `wf_59df1dde-a1f`; **v0.1.0 TAG CUT BLOCKED on user: org-level HOMEBREW_TAP_TOKEN + §12.1 live-spike sign-off**)
 - [ ] M9 — Harness acceptance on kafka-dq — **BLOCKED: testbed repo not created + v0.1.0 not cut**
 
@@ -22,11 +22,25 @@ Plan of record: `spec-lifecycle/implementation-plan.md` (Option B, pure Go). Wor
 Everything buildable without the user is DONE: M0–M8-prep, 10 commits on `build/v1`, every milestone adversarially verified (Opus) before landing, CI green on all legs after every push. Draft PR #1 body carries the milestone map. No problem ever consumed its 2-fix budget (the escalation rule never fired; all orchestrator-level fixes were the Windows-CI class, each first-try). Total ~3.4M subagent tokens across 9 milestone workflows.
 
 **Remaining, ALL user-blocked:**
-1. **§12.1 live-agent spike** (closes the full M7 DoD): interactive sessions — agent conducts refine→design→plan with approval ONLY at the human permission prompt; a planted constitution deviation must block until conform/amend; Claude Code + ≥1 other runtime.
+1. ~~**§12.1 live-agent spike** (Claude Code leg)~~ **DONE 2026-07-06**: user drove issue #3 through the full lifecycle live (refine → design-skip → plan → archive → guard clean) and shipped a real artifact (`/lifecycle-new-feature`); artifacts independently verified (gate records, deviation.json, ledger hashes, from-empty replay). Consent discipline held per user ("worked well"). Second-runtime leg stays deferred. Note: the runbook's planted-deviation scenario (002-status-json + ADR-0003 bait) was NOT exercised — deviation-blocking has only role-play + e2e-test evidence, not live-session evidence; acceptable residual, revisit if it ever misbehaves.
 2. ~~**Org-level `HOMEBREW_TAP_TOKEN`** (§10.4)~~ **RESOLVED 2026-07-06**: org secret live (visible to both primitive repos, verified via API); old repo-level secret on the constitution removed.
-3. **Cut `v0.1.0`**: tag push after 1+2; release.yml does the rest (brew cask + binaries).
-4. **kafka-dq testbed** for M9 (repo not created).
-5. After merge of PR #1 → bump the harness submodule pointer.
+3. ~~**Cut `v0.1.0`**~~ **DONE 2026-07-06**: PR #1 merged to main (`b721972`, merge commit), tag pushed, release.yml green — 6 archives + checksums on the GitHub release, `lifecycle.rb` cask live in `kentra-io/homebrew-tap` (org token worked cross-repo). Binaries download+checksum+run verified for both primitives.
+4. **kafka-dq testbed** for M9 (repo not created) — **the one remaining blocker**.
+5. ~~After merge of PR #1 → bump the harness submodule pointer~~ **DONE**: harness commit `9eed002` (submodule → v0.1.0 main; `.claudebox/Dockerfile` switched to checksum-verified release tarballs — host still needs `cb build && cb rm && cb run`).
+6. **Implement issue #2** (`lifecycle status --format json`): intentionally NOT implemented — it's planning-stage work that should go through the pipeline itself (`/lifecycle-refine` against issue #2). It's also the S3 poll seam (R1), so doing it before Conductor work starts is natural.
+
+## Parked for orchestration (S3) — from spike findings
+
+- **Issue-status sync**: close the source-tracking GitHub issue when its change archives (finding #5).
+- **Execution-phase seam**: `lifecycle-apply` skill + archive tasks-completion gate (finding #3).
+
+## Spike findings (accumulating, 2026-07-06)
+
+1. ~~**No discoverable entry point for "start a new change"**~~ **RESOLVED by the spike itself**: user filed issue #3 and drove it through the full lifecycle (refine w/ design-skip → plan → archive, ledger seq 2, guard clean) → shipped `/lifecycle-new-feature` intake skill (commit `e057640`). The primitive's first real self-hosted change.
+2. **Binaries not on box PATH** — fixed durably: `.claudebox/Dockerfile` now go-installs `constitution@v0.1.1` + `lifecycle@2fda680`; **host must `cb build && cb rm && cb run` to pick it up (not yet done — the #3 spike session still had to build from source)**; switch to release-binary COPY after v0.1.0 and bump the pin past `e057640` so the box binary embeds the new skill.
+3. **Execution phase has no skill and archive has no tasks-completion gate** (schema's `apply` block anticipates it; no Go code parses checkboxes) — **DEFERRED by user decision: tackle after the orchestrator (Conductor, S3) exists**; sketch = neutral `lifecycle-apply` skill + archive completion-check with honest override, driven as a dogfood change.
+4. **Skill fan-out drifts when edited by hand** — the #3 spike agent hand-copied the new skill into `.claude/skills/` instead of re-running `lifecycle init`, so `.cursor/`+`.agents/` trees and the `openspec/.state` manifest silently drifted. Repaired (commit `518f1cb`). Possible hardening: a CI check that fan-out trees match the embedded `skills/` source (self-guard extension) — backlog, not urgent.
+5. **Source-tracking issue not closed on archive** — change `003` archived but GitHub issue #3 stayed Open; nothing in the CLI or skills syncs issue state (join key is read-only today). **User decision: park for the orchestration layer (S3)** — likely a step after archive (orchestrator or archive-skill closes the issue with a link to the archived change + ledger seq). Neutral-primitive question to settle then: does `lifecycle-archive` prose-instruct a `gh issue close`, or does that stay branded/orchestrator-side?
 
 ## Escalations for user (accumulating)
 
