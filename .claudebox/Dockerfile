@@ -41,4 +41,28 @@ RUN ARCH=$(dpkg --print-architecture) \
       | sh -s -- -b /usr/local/bin v2.12.2 \
  && GOBIN=/usr/local/bin /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest
 
+# --- kentra SDD primitives: constitution + lifecycle on PATH ---
+# Pinned static release binaries, checksum-verified (see
+# spec-lifecycle/docs/releasing.md). Both are CGO-free single binaries —
+# no Go build, no Node runtime.
+ARG CONSTITUTION_VERSION=0.1.1
+ARG LIFECYCLE_VERSION=0.1.0
+RUN set -eux; \
+    arch="$(dpkg --print-architecture)"; \
+    case "$arch" in amd64|arm64) ;; *) echo "unsupported arch: $arch" >&2; exit 1 ;; esac; \
+    cd /tmp; \
+    for spec in \
+      "constitution adr-sourced-constitution ${CONSTITUTION_VERSION}" \
+      "lifecycle spec-lifecycle ${LIFECYCLE_VERSION}"; do \
+      set -- $spec; bin="$1"; repo="$2"; ver="$3"; \
+      base="https://github.com/kentra-io/${repo}/releases/download/v${ver}"; \
+      asset="${bin}_${ver}_linux_${arch}.tar.gz"; \
+      curl -fsSL "$base/$asset" -o "$asset"; \
+      curl -fsSL "$base/checksums.txt" -o checksums.txt; \
+      sha256sum -c --ignore-missing checksums.txt; \
+      tar -xzf "$asset" -C /usr/local/bin "$bin"; \
+      rm "$asset" checksums.txt; \
+      "$bin" --version; \
+    done
+
 USER agent
