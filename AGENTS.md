@@ -24,3 +24,7 @@ Conventions for primitives: framework-neutral core, agent-agnostic skills, thin 
 ## Glossary guard
 
 - **SDD** in this repo = **spec-driven development**. (Obra Superpowers uses "SDD" for *subagent*-driven development — different thing, don't conflate.)
+
+<!-- BEGIN spec-lifecycle v1 (managed — do not edit by hand; `lifecycle init` updates it) -->
+This project uses `lifecycle` (spec-lifecycle) for staged, gated planning — see `openspec/`. Run `lifecycle status` for gate state; approve gates only via `lifecycle approve`, never by hand-editing `approval-state.json`.
+<!-- END spec-lifecycle v1 -->
