@@ -1,0 +1,21 @@
+schemaVersion: 1
+agentInstructions:
+    targets:
+        - claude
+consent:
+    policy: strict
+sourceTracking:
+    type: none
+    pattern: ""
+categories:
+    - architecture
+    - code-style
+    - process
+    - testing
+    - security
+    - data
+skills:
+    trees:
+        - claude
+        - agents
+        - cursor

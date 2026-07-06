@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "excalidraw-skill": {
+      "source": "yctimlin/mcp_excalidraw",
+      "sourceType": "github",
+      "skillPath": "skills/excalidraw-skill/SKILL.md",
+      "computedHash": "e965362ef46358fda12d218e0d2f4a20453047327da61ec8ca640f19d518d249"
+    }
+  }
+}

@@ -1,66 +1,51 @@
-# Library Analysis Report
+# spec-lifecycle v1 build — orchestration tracker
 
-**Objective:** Produce `references/library-analysis.md` — a deeper-than-README analysis of every position in the reference library + named analysis candidates, with OSS alternatives (>1000⭐) per project. Feeds later harness design.
+*Session 2026-07-04. Orchestrator: Fable (main loop). Implementation subagents: Sonnet. Verification subagents: Opus. Per-problem fix budget: 2 retries, then escalate to user. (Prior todo.md — library-analysis tracker, completed — replaced; its outcomes live in `references/library-analysis.md`.)*
 
-**Decisions (confirmed with user):**
-- Scope: 13 library entries + 5 analysis candidates (DBOS, Taskmaster, claude-swarm, OpenSpec, BMAD). Argo dropped (syntax reference only).
-- Output: new standalone doc `references/library-analysis.md`; `technologies.md` stays the clean catalog.
-- Alternatives: 2-4 per project, OSS, >1000⭐, each with a mini-overview + how it differs.
+Plan of record: `spec-lifecycle/implementation-plan.md` (Option B, pure Go). Work happens in the `spec-lifecycle/` submodule on branch `build/v1`; committed per green milestone.
 
-## Projects (18), grouped by layer
+## Milestones
 
-### Meta-harness / multi-agent orchestration
-- [ ] Omnigent (omnigent-ai/omnigent)
-- [ ] Ruflo (ruvnet/ruflo)
-- [ ] Symphony (openai/symphony)
-- [ ] Factory.ai (commercial — OSS alternatives only)
-- [ ] claude-swarm (affaan-m/claude-swarm) — candidate
+- [x] M0 — Repo bootstrap + copy frozen helpers — **DONE** (commit `78094ad`, verified round 1, 0 fixes; GitHub-CI legs deferred — no remote repo)
+- [x] M1 — Format engine + conformance corpus — **DONE** (commits `b7e985d` + `22b8ee1`, verified round 1, 0 agent fixes + 1 orchestrator infra fix; CI green all 6 OS/Go legs + lint)
+- [x] M2 — Schema + custom-artifact validation — **DONE** (commits `dedfa75` + `4704ade`, verified round 2 after 1 coverage-fix round + 1 orchestrator Windows-CI fix)
+- [x] M3 — approve/status/config/constitution seam — **DONE** (commit `53f5fec`, verified round 2 after 1 fix round; CI green all legs)
+- [x] M4 — archive + baseline ledger — **DONE** (commits `8f16e89` + `1373316`, verified round 2; CI green all legs after testutil fix)
+- [x] M5 — guard — **DONE** (commit `694b745`, verified round 1, 0 fixes; CI green all legs first try — testutil discipline worked)
+- [x] M6 — init + integration wiring — **DONE** (commit `5bcf1f7`, verified round 3 after 2 fix rounds via recovery workflow `wf_dfd30a87-93d`; original `wf_b0ee51ab-93e` died to infra errors — partial work salvaged + gap-filled, not rewritten; CI green all 7 jobs incl. Windows first-try)
+- [x] M7 (scripted scope) — Skill bodies + dogfood — **DONE** (commit `3dbffd9`, verified round 3 after 2 fix rounds, workflow `wf_a7040d33-9c9`; CI green all 8 jobs incl. first self-guard run; *live-agent spike §12.1 EXCLUDED → escalation to user — needed to close the full M7 DoD*)
+- [x] M8 (prep scope) — Distribution — **DONE** (commit `2fda680`, verified round 1, 0 fixes, workflow `wf_59df1dde-a1f`; **v0.1.0 TAG CUT BLOCKED on user: org-level HOMEBREW_TAP_TOKEN + §12.1 live-spike sign-off**)
+- [ ] M9 — Harness acceptance on kafka-dq — **BLOCKED: testbed repo not created + v0.1.0 not cut**
 
-### Workflow definition / orchestration engine
-- [ ] Fabro (fabro-sh/fabro)
-- [ ] MS Conductor (microsoft/conductor)
+## Build review (2026-07-05 — automatable scope complete)
 
-### Spec / planning layer
-- [ ] Spec-Kit (github/spec-kit)
-- [ ] OpenSpec — candidate
-- [ ] BMAD (bmad-code-org/BMAD-METHOD) — candidate
+Everything buildable without the user is DONE: M0–M8-prep, 10 commits on `build/v1`, every milestone adversarially verified (Opus) before landing, CI green on all legs after every push. Draft PR #1 body carries the milestone map. No problem ever consumed its 2-fix budget (the escalation rule never fired; all orchestrator-level fixes were the Windows-CI class, each first-try). Total ~3.4M subagent tokens across 9 milestone workflows.
 
-### Task DAG / state engine
-- [ ] Beads (gastownhall/beads)
-- [ ] PlanDB (Agent-Field/plandb)
-- [ ] Taskmaster — candidate
-- [ ] DBOS (dbos-inc) — candidate
+**Remaining, ALL user-blocked:**
+1. **§12.1 live-agent spike** (closes the full M7 DoD): interactive sessions — agent conducts refine→design→plan with approval ONLY at the human permission prompt; a planted constitution deviation must block until conform/amend; Claude Code + ≥1 other runtime.
+2. ~~**Org-level `HOMEBREW_TAP_TOKEN`** (§10.4)~~ **RESOLVED 2026-07-06**: org secret live (visible to both primitive repos, verified via API); old repo-level secret on the constitution removed.
+3. **Cut `v0.1.0`**: tag push after 1+2; release.yml does the rest (brew cask + binaries).
+4. **kafka-dq testbed** for M9 (repo not created).
+5. After merge of PR #1 → bump the harness submodule pointer.
 
-### Agent-team authoring / methodology
-- [ ] rf-harness (revfactory/harness)
-- [ ] Compound Engineering plugin (EveryInc/compound-engineering-plugin)
+## Escalations for user (accumulating)
 
-### Cross-cutting infra
-- [ ] LiteLLM (BerriAI/litellm) — model gateway
-- [ ] nono (always-further/nono) — sandboxing
+1. ~~`gh repo create` failed: PAT lacked `createRepository`~~ **RESOLVED 2026-07-04**: user fixed GitHub wiring (classic token, repo+workflow scopes); repo created at github.com/kentra-io/spec-lifecycle; `main` + `build/v1` pushed; origin = https URL (bot token). Remaining §10 items when relevant: org-level `HOMEBREW_TAP_TOKEN` for M8.
 
-## Steps
-1. [ ] Dispatch parallel research agents (one per project)
-2. [ ] Dedupe alternatives across sections; flag cross-listings
-3. [ ] Assemble `references/library-analysis.md` (intro + summary table + grouped sections)
-4. [ ] Self-review for accuracy/consistency; verify star/license claims are sourced
-5. [ ] Review section + hand to user
+## Environment facts
 
-## Review
+- Go 1.26.4 linux/arm64, golangci-lint present, node/npm present, npm + Go proxy reachable.
+- `constitution` binary NOT installed; source present in `adr-sourced-constitution/` (buildable).
+- Remote `kentra-io/spec-lifecycle` does not exist; submodule has local commits only (a537997); building on branch `build/v1`.
 
-**Done.** `references/library-analysis.md` written — all 18 projects analyzed via parallel research agents (one per project), assembled into grouped sections + summary table + cross-cutting notes.
+## Review log
 
-**Key outcomes / findings:**
-- All 18 library/candidate repos verified as real and current (the "anonymized-looking" names — Omnigent, Ruflo, Fabro — are genuine 2026 projects).
-- **Gas Town** (steveyegge/gastown, ~16k⭐) surfaced as the most relevant *missing* library entry: a Claude-Code-native orchestrator built **on Beads** — i.e. our orchestration layer + our DAG engine already assembled. Recommend adding to `technologies.md`.
-- **Vibe Kanban** (BloopAI, ~24k⭐) also recurred as a board/worktree runner candidate (now sunsetting).
-- Recurring cross-category alternatives: Claude Squad, CrewAI, OpenHands, LangGraph, Backlog.md.
-- Notable corrections vs. catalog: Beads now under `gastownhall` org (~24.5k⭐); MS Conductor ~250⭐ (sub-1k); Symphony ~25k.
-
-**Caveats recorded in the report:** several star counts are single-source June-2026 reads (opencode ~175k, Superpowers/GSD figures noisy); Ruflo & rf-harness lean on self-reported benchmarks; license flags noted for productization (AGPL/Commons Clause/source-available tiers).
-
-**Follow-ups completed:**
-- ✅ Added **Gas Town** to `technologies.md` (catalog style) + full analysis section in `library-analysis.md` (now 19 projects). Vibe Kanban was briefly added then removed at the user's request — it remains only as an external *alternative* reference under Gas Town / Fabro / Taskmaster, not as a library position.
-
-**Open follow-ups:**
-- This completes "Phase 2: research/document" for the current library; design phase still gated on library being declared complete.
+- **M8 prep scope** (wf_59df1dde-a1f, 2 agents, ~147k tok): PASS round 1, 0 fixes. goreleaser v2.17.0 snapshot: 6 static binaries + checksums + dist cask; ldflags proven live (--version shows "built <date>" segment only the ldflags path emits, not ReadBuildInfo fallback); ldd = not dynamic. Bare-env e2e (env -i, no Go/constitution): init warns → refine approve w/ --design-skip OK (gate 1 self-sufficient) → plan approve HARD exit 2 without deviation.json (matches M6/M7 semantics) → archive refused exit 1 on pending gate → --force-gates archives with gatesOverridden:true in ledger (never silent) → guard clean. Cask structurally identical to constitution's (homebrew_casks v2 key, same tap/name_template/postflight, distinct lifecycle.rb — no collision). release.yml: v* tags only, minimal permissions, SHA-pinned actions matching constitution, Go 1.26.x matches ci.yml, secret absence harmless until a tag exists. docs/releasing.md commands all verified; claudebox snippet = static binary, no Node. dist/ gitignored. Tag NOT cut (deliberate).
+- **M7 scripted scope** (wf_a7040d33-9c9, 6 agents, ~453k tok): PASS round 3. Fix rounds: r1 details in journal; r2 = lifecycle-archive exit-code table made truthful to mapArchiveError/postArchiveGuard (exit 1 = refused-nothing-written-retry; exit 2 = couldn't-run OR committed-but-post-guard-failed → escalate, no self-repair). Zero .go files changed → coverage floors untouched. Skills: 5 real bodies, no allowed-tools (house style), mutating verbs prose-guarded; plan-gate wiring truthful (constitution /plan-gate skill honors human-specified --out; `constitution deviation validate` real hidden verb; approve reads fixed <changeDir>/deviation.json, hash mismatch = warn). Verifier ROLE-PLAYED refine+design skills literally in scratch — including gate-2 refusal without deviation.json (exit 2, correct message). Dogfood genuine: repo's own openspec/ live; 3 real build-decision ADRs (constitution guard clean); change 001-capability-size-warning (real §6.4 intent) through all 3 gates → archive; both constitution hashes equal at gates 2/3; ledger pre/post image hashes independently recomputed; guard exit 0 by verifier; re-init byte-preserves dogfood artifacts. CI: self-guard job added, existing jobs untouched. Non-blocking: lifecycle.yml constitution.version empty on (devel) builds by design; design-skill "step 3" cross-ref slightly loose.
+- **M6** (recovery wf_dfd30a87-93d, 6 agents, ~483k tok; original wf_b0ee51ab-93e died to connection errors — salvage-and-complete, not rerun): PASS round 3. Fix round 1: inline comment on `schema:` key was dropped by the surgical YAML edit → setMappingScalar now mutates only Value/Tag/Style, comments survive byte-for-byte (live-verified). Fix round 2: go.mod not tidy (x/term listed indirect) → tidy now a no-op. Verified live: fresh init → full tree (descriptor byte-matches embeds, lifecycle.yml per spec §10, managed blocks, 5 skills × 3 trees) → validate clean → full approve e2e; re-init byte-identical; drift refusal NON-TTY safe (no hang, no [y/N], exit 1, names --force; --force restores to clean-baseline hash); surgical config.yaml preserves user keys+comments (documented limitation: nested re-indent only); preflight missing-binary + version-mismatch both warn (hard requirement stays at gates per §2.7); existing-project state (changes/specs/approval-state/ledger) byte-untouched on re-init; §2.10 sourceTracking warning real. Coverage: scaffold 85.4 / config 97.0 / constitution 89.5; cmd 80.1 (main pkg, outside §9 gate). Note: runtime.GOOS in main_test.go:157 is .exe build-naming, not an FS-error skip — testutil rule N/A.
+- **M5** (wf_a5d91778-1cc, 2 agents, ~379k tok): PASS round 1, 0 fixes. Coverage 99.0%. Full tamper matrix exact (archive_mutated / projection_drift caught by BOTH chain+replay / chain_break / ledger_missing / truncated-ledger exit 2); multi-finding pooling; guard 5x byte-identical; 100-seeded-history replay property. Post-archive guard runs at CLI layer (import cycle) — archives commit, pre-existing tamper exits 2. Noted: brownfield capabilities exempt from replay byte-diff (documented) but chain-covered; property test's live projection shares spec.Fold with replay (not fully independent oracle) — backstopped by tamper suite.
+- **M4** (wf_88c6e6e9-dee, 4 agents, ~552k tok): PASS round 2 (fix round: archive coverage 77.1%→92.6% + REAL atomicity bug — multi-capability folds could partially land; fixed via two-phase atomicwrite Prepare/Commit/Discard, all writes staged before any rename). Verifier byte-matched live archive runs vs corpus cases 07+08, recomputed all ledger hashes independently, proved seq folder-date-independence + append-only tamper posture. Residual documented: commit-point rename A-succeeds/B-fails edge (near-impossible, detectable, M5 guard catches). **Orchestrator fix #3 (Windows class, 3rd instance)**: ENOTDIR tests → created internal/testutil skip-guards, converted all 6 sites (1373316); lesson written to tasks/lessons.md; M5+ prompts name the class.
+- **M3** (wf_3470fe65-183, 4 agents, ~595k tok): PASS round 2 (fix round: deviationRef made change-folder-relative; approve coverage 84.8%→94.5%). Spike §12.2 CONFIRMED: `constitution deviation validate` exists — hidden verb, positional path, exit 0/1/2, cwd must be constitution project root; wrapper uses cmd.Dir=root. Live e2e with real constitution binary: full 3-gate sequence, two constitution hashes at gates 2/3, strict-consent refusal, --design-skip, reject-then-approve history, drift flagging, planted invalid deviation.json caught by real binary. Design note: `status` is read-only and never loads lifecycle.yml, so bad schemaVersion refuses in approve (exit 2) but not status — accepted.
+- **M2** (wf_0d7988a4-f2a, 4 agents, ~438k tok): PASS round 2 (fix round 1 = schema coverage 80.4%→87.0%, error-path tests). validate 90.0% / cmd 86.2% coverage. Verbs: validate wired; init correctly deferred to M6. Warning-only finding for requirement-under-unrecognized-H2 added (M1 observation). **Orchestrator fix #2 (Windows-CI class)**: the fix-round's chmod-based tests don't hold on Windows → runtime.GOOS skips (4704ade). Watch: agents keep writing Unix-only permission tests — M3+ prompts should call this out.
+- **M1** (wf_5bec89da-1d7, 4 agents, ~592k tok): PASS round 1. Provenance proven — verifier re-ran oracle fresh on all 10 cases, byte-identical. Fuzz 3.6M+2.3M execs clean. Coverage 92.6% (target 95% for core pkgs — ratchet later; uncovered = defensive branches). 5 deliberate fold divergences from oracle documented in fold.go/doc.go. Non-blocking observations parked: (a) `### Requirement:` under unrecognized H2 silently ignored (oracle-conformant; optional warning handed to M2), (b) body-content errors carry Line=0. **Orchestrator fix**: Windows CI legs failed on CRLF checkout mangling byte-exact fixtures → `.gitattributes` `* -text` (22b8ee1); CI then green on all legs.
+- **M0** (wf_c1e39089-198, 2 agents, ~167k tok): PASS round 1. atomicwrite byte-identical; scaffold block/state diffs limited to allowed deltas (markers, paths); scaffold.go = adapted fan-out engine w/ TODO(M6/M7) seams; --version via ReadBuildInfo fallback. Note: constitution CI has moved to checkout@v7 — ours pinned @v6 per plan text (deliberate, revisit at M8).

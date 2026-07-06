@@ -4,6 +4,8 @@
 
 > **What this document is.** The MVP scope + build plan for the harness. [planning.md](./planning.md) and [observability.md](./observability.md) decided *what the system is*; this decides *what ships in the MVP, in what order, and the few things still to verify at build time*. Every decision below was made deliberately in a scoping session; deferred items are flagged as deferred, not silently dropped.
 
+> **STATUS BANNER — 2026-07-02, updated same day (read first).** Three shifts since this was written (mirrors [planning.md](./planning.md)'s banner): **(1)** the **constitution is a standalone primitive** — [`adr-sourced-constitution`](./adr-sourced-constitution/adr-sourced-constitution.md) (submodule; design complete), a **Phase-1 dependency**. **(2)** the **planning module is now also a standalone primitive**: [**`spec-lifecycle`**](./spec-lifecycle/spec-lifecycle.md) (submodule; design pending review) — **P0 is DECIDED: OpenSpec (pinned) as artifact runtime + Superpowers co-installed + the novel spine (gates/records/contracts/bug flow) built in the primitive.** Spec-Kit eliminated ([research](./references/sdd-framework-research-2026-07.md)). Every "Spec-Kit"/"`kentra` bundle" mention below is superseded; the "Lifecycle bundle" component row = `spec-lifecycle`. **(3)** Phase 1's lifecycle work = **implementing `spec-lifecycle` per its spec** (CLI `init/approve/status/guard`, the `kentra-spec-lifecycle` OpenSpec schema, stage skills) — [planning.md §6c](./planning.md) is fully resolved, so "first resolve the opens" no longer gates the build. Note: constitution-primitive v1 integration is folder+pointer (its framework adapters are deferred), which `spec-lifecycle`'s seam already assumes.
+
 ---
 
 ## 0. Scope decisions (2026-06-25)
@@ -71,7 +73,7 @@ This is the load-bearing refinement of [planning.md](./planning.md) made this se
 
 **Adopted (off-the-shelf / forked, not built):**
 - **Conductor** — workflow engine (tiny-patch fork, §4).
-- **Spec-Kit** — planning/spec layer, extended via the committed `kentra` bundle ([planning.md §6b](./planning.md)).
+- **SDD framework (TBD: spec-kit / openspec / superpowers)** — planning/spec layer; if Spec-Kit, extended via the committed `kentra` bundle ([planning.md §6b/§6c-P0](./planning.md)).
 - **GitHub Issues + Projects v2** — system of record + coarse status.
 - **`cb` / claudebox** — execution sandbox (reused, not rebuilt).
 - **LiteLLM (pinned) + Langfuse + Claude Code OTel** — observability plane ([observability.md](./observability.md)).
@@ -84,8 +86,9 @@ This is the load-bearing refinement of [planning.md](./planning.md) made this se
 | **GitHub adapter** | `gh` script steps: read issue type, **claim (one bot + lock label)**, transition, assign. | planning.md §5 |
 | **Conductor-MCP server** | The agent-agnostic interface for **Mode A**: exposes lifecycle state, artifact submission, gate execution/enforcement, transitions to the interactive session. **This is the spine of the interactive half.** | **NEW (this session)** |
 | **Host watcher daemon** | Long-lived host service: watches for *plan-approved & claimed* issues → `engine.run()` per issue; subscribes to each run's event bus (also the dashboard aggregator). | **NEW (this session — formalizes §12a)** |
-| **`kentra` Spec-Kit bundle** | Preset templates (requirements func+NFR / design / plan-with-validation-contracts) + intent-named commands (`requirements`/`design`/`plan`/`analyze`/`adr`/`regen`/`constitution-init`) + docs-stage `regen` hook. | planning.md §6b |
-| **Governance core** | Immutable append-only ADR log + supersede semantics; projection regeneration; amendment gate (HARD RULE); plan-time + code-time deviation gates. | planning.md §7–8 |
+| **`spec-lifecycle`** (submodule) | The planning module, specced: `lifecycle` CLI (`init`/`approve`/`status`/`guard`), custom `kentra-spec-lifecycle` OpenSpec schema (proposal / specs-delta / design / `plan.md` w/ validation contracts), stage skills, `approval-state.json`, living-spec fold + replay guard, bug profile, constitution seam. Runs on **OpenSpec (pinned)**; Superpowers co-installed. | [primitive spec](./spec-lifecycle/spec-lifecycle.md) |
+| **`adr-sourced-constitution`** (submodule) | Immutable append-only ADR log + supersede/deprecate; deterministic `constitution.md` projection (`regen`); `constitution init`; plan-validation gate (→ `deviation.json`). Go CLI + agent-agnostic skills. **Design complete; a Phase-1 dependency.** | [primitive spec](./adr-sourced-constitution/adr-sourced-constitution.md) |
+| **Governance wiring (harness side)** | Amendment gate (HARD RULE) consent enforcement + Conductor reading the primitive's records and blocking; code-time deviation gate (execution domain). | planning.md §7–8 |
 | **Thin dashboard** | Live multi-run "issue board" overlay (host daemon event-bus subscription) + gate-answer; Conductor per-run view as drill-down; GitHub Projects as durable board. | planning.md §12a |
 | **Conductor fork patch** | Minimal in-fork delta: `AgentDef.metadata` field; any provider/MCP/wait-step seam that can't be reached externally. | planning.md §13 |
 
@@ -103,8 +106,9 @@ harness/  (our repo — all logic lives here, against Conductor's public ABCs)
   mcp/conductor_mcp.py                 Conductor-MCP server (Mode A interface)
   adapters/github.py                   gh claim/transition/read-type
   watcher/daemon.py                    host watcher + event-bus aggregator
-  kentra/                              Spec-Kit bundle (preset + extension + hooks)
-  governance/                         ADR log, projection regen, amendment + deviation gates
+  lifecycle/                           SDD-framework bundle (TBD: spec-kit/openspec/superpowers) — templates + commands + hooks
+  adr-sourced-constitution/            submodule: ADR log, projection regen, plan-validation gate (Go CLI + skills)
+  governance/                         harness-side wiring: consent enforcement + Conductor gate-blocking on the primitive's records
   workflows/feature.yaml  bug.yaml     Level-A lifecycle definitions
   dashboard/                           thin live issue-board overlay
   deploy/compose.yml                   LiteLLM (pinned+digest) + Langfuse local profile
@@ -119,8 +123,8 @@ harness/  (our repo — all logic lives here, against Conductor's public ABCs)
 The harness is a **standalone tool**; `kafka-dq` is just its first tenant. The split:
 
 - **Harness repo owns** (project-neutral): the Conductor fork, all plugins (provider, MCP, GitHub adapter, watcher, governance core), the shared `feature.yaml` / `bug.yaml` lifecycles, the `kentra` bundle source, the obs compose profile.
-- **Each target project repo commits** (project-specific, self-contained): `.specify/` (pinned Spec-Kit tooling + the `kentra` bundle + `memory/` constitution) and `.claudebox/Dockerfile` (the project's stack + Spec-Kit CLI install), plus per-issue spec-folders ([planning.md §6b](./planning.md)). A target project is reproducible **without** the harness.
-- **Nothing `kafka-dq`-specific enters the harness.** Stack/language specifics live only in `kafka-dq`'s committed `.claudebox/` + `.specify/memory/` (constitution). `constitution-init` interviews to seed `kafka-dq`'s principles greenfield.
+- **Each target project repo commits** (project-specific, self-contained): the chosen SDD framework's committed tooling/bundle (e.g. `.specify/` if Spec-Kit) + the framework-neutral **`constitution/`** folder + `.claudebox/Dockerfile` (the project's stack + the `constitution` CLI baked in, + the framework CLI once P0 is decided), plus per-issue spec-folders. A target project is reproducible **without** the harness.
+- **Nothing `kafka-dq`-specific enters the harness.** Stack/language specifics live only in `kafka-dq`'s committed `.claudebox/` + its `constitution/` folder (+ the chosen framework's config dir, once P0 is decided). `constitution init` interviews to seed `kafka-dq`'s principles greenfield.
 
 > `kafka-dq` is **created now as an empty greenfield shell** (the Phase-1 testbed, §6). Its concrete stack is **not pre-chosen** — it falls out of the planning vertical's design stage as an ADR, targeting a local-first service with testcontainers ([planning.md §11](./planning.md) — which makes every bug reproducible). The shell needs only enough to commit `.specify/` + `.claudebox/`.
 
@@ -131,15 +135,17 @@ The harness is a **standalone tool**; `kafka-dq` is just its first tenant. The s
 **Strategy (S10).** Build the **standalone planning vertical** first — no engine, no observability. It is the best-specified and most differentiating part of the system, and once it exists it becomes **the tool we use to plan everything else** (engine integration, execution, obs, dashboard). Each phase has a hard **Definition of Done**; nothing is "complete" without proving it (per the user's verification-before-done principle).
 
 ### Phase 1 — Standalone planning vertical (no engine, no obs)
-The interactive idea→plan flow + the event-sourced constitution, producing governed, user-approved artifacts in the issue's spec-folder. This is **Mode A minus hard enforcement** (§2 build-order note): the plan-time gate *surfaces* deviations and the human-in-the-loop honors them; the engine that *blocks* comes in Phase 2.
-- `kentra` bundle: preset templates (requirements **func + NFR distinct**, design, plan with **per-milestone validation contracts**) + intent-named commands (`requirements`/`design`/`plan`/`analyze`/`adr`/`regen`/`constitution-init`) + bare aliases.
-- `constitution-init`: greenfield principles interview → `.specify/memory/`.
-- Event-sourced constitution core: immutable append-only **ADR log + supersede** semantics; **projections** (logical architecture + living spec) + **`regen`** (read all specs + ADRs → rewrite projections).
-- Plan-time deviation gate: `speckit.kentra.analyze` → emits `deviation.json` (surface + human-honored; **no engine block yet**).
-- Amendment gate (HARD RULE): human-consent loop — works interactively from day one (it was always a human decision, §8 planning.md).
-- The interactive flow: a human runs an agent session with the `kentra` skills configured; refine → design → plan, each writing the artifact + `approval-state.json` on conversational approval.
+The interactive idea→plan flow + the event-sourced constitution, producing governed, user-approved artifacts in the issue's spec-folder. This is **Mode A minus hard enforcement** (§2 build-order note): the plan-time gate *surfaces* deviations and the human-in-the-loop honors them; the engine that *blocks* comes in Phase 2. **Two sub-parts** now that the constitution is a separate primitive:
 
-**DoD:** on a greenfield target, a human drives an issue *idea → plan* interactively; the constitution is bootstrapped; all three artifacts (requirements/design/plan) are produced, governed, and user-approved in the spec-folder; an ADR can be appended and projections regenerated; a **deliberately planted violation is surfaced** by `analyze`; an amendment requires explicit human consent. Agent-agnostic: the flow uses only the `kentra` commands + spec-folder records (no Claude-specific or engine dependency).
+*Prerequisite — the constitution primitive.* Build/consume [`adr-sourced-constitution`](./adr-sourced-constitution/adr-sourced-constitution.md) (Go CLI + agent-agnostic skills; design complete): `constitution init` (greenfield principles interview), the immutable **ADR log + supersede/deprecate**, the deterministic **`constitution.md` projection** (`regen`), and the **plan-validation gate** (→ `deviation.json`, each finding citing an `ADR-id`). Framework-neutral; integrates via a `constitution/` folder + an AGENTS.md/CLAUDE.md pointer. *(living-spec — the multi-feature-spec projection — is a separate, out-of-scope module — [planning.md §6c-P6](./planning.md).)*
+
+*The lifecycle layer (the planning module proper) — now specced as [`spec-lifecycle`](./spec-lifecycle/spec-lifecycle.md); Phase 1 = implement it:* ([planning.md §6c](./planning.md) is fully resolved — OpenSpec runtime, 3 stages, no tasks stage, NFR routing, files-canonical.)
+- The `kentra-spec-lifecycle` OpenSpec schema (proposal / specs-delta / design / **`plan.md` with per-milestone validation contracts**) + the `lifecycle` CLI (`init`/`approve`/`status`/`guard`, incl. the living-spec **replay guard**) + stage skills (refine/design/plan/bug/archive).
+- Plan-time deviation gate wired in from the constitution primitive at gates 2 and 3: surfaces deviations, human honors them (**no engine block yet**).
+- Amendment gate (HARD RULE): per-ADR human consent at gate 2 (design's ADR proposals → `constitution adr new` on acceptance; the primitive's consent policy set to *strict* for our projects).
+- The interactive flow: a human runs an agent session with the lifecycle skills + the constitution loaded; refine → design → plan, each writing artifacts + a hash-anchored `approval-state.json` gate entry on conversational approval; archive folds the delta into the living spec.
+
+**DoD:** on a greenfield target, a human drives an issue *idea → plan* interactively; the constitution is bootstrapped via `constitution init`; all lifecycle artifacts are produced, governed, and user-approved in the spec-folder; an ADR can be appended and `constitution.md` regenerated; a **deliberately planted violation is surfaced** by the plan-validation gate, citing the `ADR-id`; an amendment requires explicit human consent. Agent-agnostic: the flow uses only the lifecycle commands + the constitution's folder/records + spec-folder records (no engine dependency).
 
 ### 🐕 Milestone — dogfood: plan the rest of the system
 Use the Phase-1 planning vertical to **plan Phases 2–4 of the harness itself** (engine integration, execution domain, obs, dashboard) as governed requirements/design/plan artifacts. This both delivers the plan for the remaining system *and* is the first real exercise of the planning domain. *(Caveat: the harness repo is brownfield, so this uses the `kentra` planning commands conversationally rather than the greenfield `constitution-init` path; brownfield constitution extraction stays deferred — §8.)*

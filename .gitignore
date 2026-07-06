@@ -6,3 +6,9 @@
 # External reference repos cloned for analysis (have their own .git — not vendored)
 references/conductor/
 references/fabro/
+
+# claudebox tool checkout (its own git repo — external clone, not a submodule)
+claudebox/
+
+# Claude Code per-machine local settings (never shared)
+.claude/settings.local.json
