@@ -41,6 +41,13 @@ RUN ARCH=$(dpkg --print-architecture) \
       | sh -s -- -b /usr/local/bin v2.12.2 \
  && GOBIN=/usr/local/bin /usr/local/go/bin/go install golang.org/x/tools/cmd/goimports@latest
 
+# --- uv: Python toolchain for the agent-orchestration module (Conductor is
+# Python; the module core is uv-managed — see harness orchestration-implementation-plan.md P2).
+# cb itself is NOT baked in: it is built on demand from the claudebox submodule
+# (`go build -o ~/.local/bin/cb .`), which version-tracks the checked-out fork —
+# exactly what M2 (overlay seam) development needs.
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+
 # --- kentra SDD primitives: constitution + lifecycle on PATH ---
 # Pinned static release binaries, checksum-verified (see
 # spec-lifecycle/docs/releasing.md). Both are CGO-free single binaries —

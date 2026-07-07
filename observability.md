@@ -113,6 +113,7 @@ The decision is made; these are the things to confirm during the build, not bloc
 ## 7. Follow-ups beyond this doc
 
 - **Sync [planning.md](./planning.md):** §12a's "Langfuse vs Phoenix vs Helicone — confirm at build" lean and §15 open-decision #8 are now **settled** by this record — update both to point here and mark #8 resolved. *(Not done in this doc; flagged for the next planning.md edit.)*
+- **Roadmap — monitor L3-judge calibration (drift-vs-human).** The Stage-3 orchestration module ([`orchestration.md`](./orchestration.md) §5.4) gates milestones partly on an **LLM judge** over plain-language acceptance criteria. LLM judges are reliable-but-not-*valid* (position / verbosity / self-preference / length bias), so the judge needs **ongoing calibration**: spot-check its verdicts against human judgment and flag when they diverge past **~20–25%** (→ the rubric needs fixing). This is an **observability-plane** concern, not something the loop self-polices — and it maps cleanly onto tools we've already chosen: Langfuse persists the judge's **scores** and supports **human annotation** of the same traces, so a **judge-vs-human agreement metric** (per rubric / per milestone-type, over a rolling window, with a divergence alert) is a Langfuse eval-over-traces + annotation build. Fold this into the Stage-4 build as a first-class eval, since it's what keeps the autonomous verify loop trustworthy. *(Also: prefer one anchored judge over multi-agent debate — debate amplifies bias — so the metric tracks a single judge, not an ensemble.)*
 
 ---
 

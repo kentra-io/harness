@@ -22,7 +22,7 @@ methodology). See [`AGENTS.md`](./AGENTS.md) for the full convention.
 |---|---|---|
 | 1 | **Governance** — [`adr-sourced-constitution`](./adr-sourced-constitution/): event-sourced ADR log → deterministic `constitution.md` | Settled, building |
 | 2 | **Planning** — [`spec-lifecycle`](./spec-lifecycle/): staged/gated issue lifecycle in the OpenSpec **format**, reimplemented in pure Go | **Shipped — v0.1.0** |
-| 3 | **Orchestration + runtime + agent abstraction** — Microsoft Conductor + claudebox + [`agent-definition`](./agent-definition.md) (agent-def spec drafted) | Designed (planned) |
+| 3 | **Orchestration + runtime + agent abstraction** — [`orchestration`](./orchestration.md) (Conductor-extended execution loop) + claudebox + [`agent-definition`](./agent-definition.md) (both specs drafted) | Designed (planned) |
 | 4 | **Proxy / observability** — LiteLLM + Langfuse | Decided, deferred |
 | 5 | **Auto-improvement** — experiment controller (online champion-challenger A/B over agent config) | Designed, deferred |
 
@@ -49,9 +49,14 @@ blocks. Files are the canonical interface.
 Stage 3+ is designed but **not built** — nothing starts until `spec-lifecycle`
 dogfooding surfaces the need. The current design:
 
-- **Orchestration = Microsoft Conductor** (`microsoft/conductor`, MIT) —
-  deterministic YAML route/`when` workflow engine. *(Not Conductor.build, the
-  Melty macOS app.)*
+- **Orchestration = [`orchestration`](./orchestration.md)** (spec drafted), the
+  execution business logic that **extends** Microsoft Conductor (`microsoft/conductor`,
+  MIT — deterministic YAML route/`when`, durable run-state) rather than owning it.
+  Conductor is the durable spine; the module adds the implement→verify→escalate
+  loop, a **3-layer verification** model (executable check + generic healthcheck +
+  advisory judge, with **author≠verifier** as the trust spine), and a fixed
+  **3-attempt escalation ladder** (1 solo + 2 orchestrator-guided, then human).
+  *(Not Conductor.build, the Melty macOS app.)*
 - **Runtime = claudebox / Docker.** microVMs evaluated and deferred.
 - **Agents = [`agent-definition`](./agent-definition.md)**, a custom neutral
   primitive (own repo + submodule; **spec drafted**): minimal fields
@@ -76,7 +81,7 @@ under both. See [`mvp-plan.md`](./mvp-plan.md) §2.
 ## Map of the repo
 
 - **Designs:** [`planning.md`](./planning.md), [`mvp-plan.md`](./mvp-plan.md), [`observability.md`](./observability.md)
-- **Primitive specs (pre-extraction):** [`agent-definition.md`](./agent-definition.md) (Stage 3, design drafted)
+- **Primitive specs (pre-extraction):** [`orchestration.md`](./orchestration.md) (Stage 3 execution loop, design drafted) + [`orchestration-implementation-plan.md`](./orchestration-implementation-plan.md) (plan drafted, pending review), [`agent-definition.md`](./agent-definition.md) (Stage 3 agent abstraction, design drafted)
 - **Methodology umbrella:** [`kentra-sdlc.md`](./kentra-sdlc.md) (parked / conventions-only)
 - **Resumable session state:** [`tasks/planning-module-handoff.md`](./tasks/planning-module-handoff.md), [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md)
 - **Decision research:** [`references/`](./references/) — latest: [`references/sdd-framework-research-2026-07.md`](./references/sdd-framework-research-2026-07.md)
