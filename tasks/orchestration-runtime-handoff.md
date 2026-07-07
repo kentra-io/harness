@@ -121,6 +121,9 @@ LiteLLM (pinned + digest-verified) + Langfuse + Claude Code OTel via local compo
 - `roadmap-ideas.md` — already cleaned (2026-07-05): agent-runtime graduated to Stages 3–5; omnigent/GEPA discarded. No action.
 - Deep in-body line-scrub of `planning.md`/`mvp-plan.md` — **intentionally not done**; the read-first banners are the reconciliation. Do a full body rewrite only if/when Stage 3 needs those sections as live spec (likely fold into a fresh Stage-3 spec doc instead).
 
+**Watch-items / external references to review when refining the agent cast (M6 / agent-definition):**
+- **`addyosmani/agent-skills`** (https://github.com/addyosmani/agent-skills) — review this repo when refining the agents (M6 cast prompts / agent-definition skill-provisioning). Potentially incorporate the repo or individual skills into the per-agent overlay (channel-1 provisioned skills, see §"agent-definition primitive"). Flagged by user 2026-07-07. Not blocking; evaluate at agent-refinement time, cross-check licensing before vendoring.
+
 ## Pointers
 - Source design: `mvp-plan.md` (§2 two-mode control flow; §7 spikes), `planning.md`, `observability.md`, `references/conductor-integration-notes.md` (build recon).
 - Research provenance: two `deep-research` passes (2026-07-04/05) — (1) omnigent-vs-conductor / runtime / auto-eval; (2) agent-schema / Claude-native agents / fleet UIs. Key verified facts embedded above.
