@@ -7,7 +7,8 @@ This repo (`kentra/harness`) is the **wrapper/design repo** for the agentic codi
 **Every standalone, reusable primitive we build lives in its own repo, added here as a git submodule.** The harness wraps and consumes primitives; it does not absorb them.
 
 - [`adr-sourced-constitution/`](./adr-sourced-constitution/) — event-sourced ADR log → deterministic `constitution.md` projection (Go CLI + skills).
-- [`spec-lifecycle/`](./spec-lifecycle/) — the planning module: staged, gated issue lifecycle in the **OpenSpec format** (directory layout + delta grammar + fold, reimplemented in pure Go — no OpenSpec/Node runtime); gate records + living-spec replay guard (Go CLI + skills + `kentra-spec-lifecycle` schema).
+- [`spec-lifecycle/`](./spec-lifecycle/) — the planning module: staged, gated issue lifecycle in the **OpenSpec format** (directory layout + delta grammar + fold, reimplemented in pure Go — no OpenSpec/Node runtime); gate records + living-spec replay guard (Go CLI + skills + `kentra-spec-lifecycle` schema). **Shipped — v0.1.0.**
+- **Planned (Stage 3, not yet a repo) — spec drafted:** [`agent-definition`](./agent-definition.md) — a neutral declarative agent schema (`system_prompt` / `skills` / `model` + experiment slots) that **conforms to the Agent Format envelope** (`.agf.yaml`) and owns a thin extension for the two gaps it lacks (`skills`, `harness`); conform-to-format / own-the-engine (CLI `agentdef`), materializes a def → `.claude/agents/<role>.md` inside claudebox, consumed by Conductor via a ClaudeboxProvider. Full spec: [`agent-definition.md`](./agent-definition.md); Stage-3 build-time open questions in [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md).
 - Future primitives follow suit. Default assumption when specing something framework-neutral and reusable: **standalone repo + submodule**, not a harness-internal directory.
 
 **Neutral mechanism, branded methodology.** Primitive repos stay framework-neutral and unbranded (MIT, reusable beyond kentra). The `kentra-` prefix lives only at the branded layer: the OpenSpec schema `kentra-spec-lifecycle`, and the umbrella methodology [`kentra-sdlc`](./kentra-sdlc.md) — the opinionated composition of the primitives into kentra's end-to-end SDLC (parked/conventions-only; owns the deferred TODO-capture + documentation concerns).
@@ -17,9 +18,9 @@ Conventions for primitives: framework-neutral core, agent-agnostic skills, thin 
 ## Current state pointers
 
 - Methodology map / umbrella: [`kentra-sdlc.md`](./kentra-sdlc.md) (the intent pipeline, primitive registry, and the two deferred concerns — TODO capture + documentation).
-- Resumable design-session state: `tasks/planning-module-handoff.md` (read this first when picking up planning-module work).
+- Resumable design-session state: `tasks/planning-module-handoff.md` (planning module — now **shipped**) and [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md) (**read this first when picking up Stage-3 orchestration/runtime/agent work**).
 - Latest framework research: `references/sdd-framework-research-2026-07.md`.
-- `README.md` is **stale** (describes a dropped Spec-Kit + Beads architecture) — do not trust it over `planning.md`/`mvp-plan.md`.
+- Doc status (2026-07-06 reconciliation): `README.md` rewritten to current architecture. `planning.md` / `mvp-plan.md` carry **read-first STATUS banners** — their in-body Spec-Kit/OpenSpec-runtime text is historical and superseded by those banners (Option B: pure-Go, OpenSpec = format not runtime). `workflow-orchestration-analysis.md` is superseded-in-part (Beads/nesting) — banner at top.
 
 ## Glossary guard
 

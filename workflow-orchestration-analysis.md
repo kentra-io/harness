@@ -2,6 +2,8 @@
 
 *Generated: 2026-06-02 | Companion to [README.md](./README.md). Full research in [../tasks/research-spec-rot.md](../tasks/research-spec-rot.md) and the workflow research below.*
 
+> **⏱ SUPERSEDED IN PART — 2026-07-06 (read first).** Kept as provenance; two premises are now stale. **(1)** The **Beads / YAML-DAG-compiler** framing below is superseded by the settled decision: orchestration = **Microsoft Conductor** (deterministic YAML route/`when` engine), runtime = **claudebox**, agents = a custom neutral **agent-definition primitive** — Beads is dropped. **(2)** "Claude Code subagent nesting is 1 level" is **wrong — it is now 5 levels.** The current orchestration design lives in [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md) (Stage 3); the general "spec layer ≠ orchestration layer" separation below still holds.
+
 ## The question
 
 Can the harness, running **inside Claude Code**, support:

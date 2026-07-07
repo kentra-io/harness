@@ -1,99 +1,95 @@
-# Agentic Coding Harness
+# Agentic Coding Harness (`kentra/harness`)
 
-Orchestrated, spec-driven development using Claude Code as the runtime.
+The **wrapper / design repo** for an agentic coding harness: staged, gated,
+spec-driven development with Claude Code as the runtime. This repo holds the
+domain designs, the decision research, and the resumable session state — and
+**composes standalone primitives as git submodules** rather than absorbing them.
 
-## Architecture
+> **Orientation:** [`AGENTS.md`](./AGENTS.md) is the canonical agent-facing map.
+> This README is the human front door. Where they differ, `AGENTS.md` wins.
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  Spec-Kit (tailored)                                      │
-│  Input: requirements / PRD / issue                        │
-│  Output: Beads DAG (tasks + dependencies + gates)         │
-│  Workflow: Specify → Plan → Tasks → Beads issues          │
-└────────────────────────┬─────────────────────────────────┘
-                         │
-                         ▼
-┌──────────────────────────────────────────────────────────┐
-│  Beads (bd)                                               │
-│  Persistent DAG task store (Dolt-backed)                  │
-│  bd ready --json → dispatch-ready tasks                   │
-│  bd close <id>  → mark complete                           │
-│  BeadBoard UI   → visualize DAG progress                  │
-└────────────────────────┬─────────────────────────────────┘
-                         │
-                         ▼
-┌──────────────────────────────────────────────────────────┐
-│  Orchestration (Claude Code - Opus)                       │
-│  Reads ready tasks from Beads                             │
-│  Dispatches to Sonnet subagents via Agent tool            │
-│  Runs gate checks (tests/lint) at phase boundaries        │
-│  Workflow definitions use Conductor YAML syntax           │
-└────────────────────────┬─────────────────────────────────┘
-                         │
-            ┌────────────┼────────────┐
-            ▼            ▼            ▼
-     ┌───────────┐ ┌───────────┐ ┌───────────┐
-     │  Sonnet   │ │  Sonnet   │ │  Sonnet   │
-     │ Subagent  │ │ Subagent  │ │ Subagent  │
-     │ (worktree)│ │ (worktree)│ │ (worktree)│
-     └───────────┘ └───────────┘ └───────────┘
-```
+## Repo pattern — standalone primitives as submodules
 
-## Components
+Every standalone, reusable primitive lives in **its own repo** and is consumed
+here as a submodule. Primitives stay framework-neutral, agent-agnostic, and MIT.
+The `kentra-` prefix appears only at the branded layer (the
+`kentra-spec-lifecycle` schema; the [`kentra-sdlc`](./kentra-sdlc.md) umbrella
+methodology). See [`AGENTS.md`](./AGENTS.md) for the full convention.
 
-### 1. Planning Layer — Spec-Kit (tailored)
-- Adapted from [github/spec-kit](https://github.com/github/spec-kit)
-- Structured workflow: Specify → Plan → Tasks → Beads DAG
-- Outputs Beads issues with dependencies, acceptance criteria, and phase assignments
-- Tailored to enforce separation of functional requirements, non-functional requirements, and technical architecture (TBD)
+## Stage map — 2 settled, 3 planned
 
-### 2. Task DAG — Beads
-- [steveyegge/beads](https://github.com/steveyegge/beads) (~22K stars)
-- Dolt-backed version-controlled SQL database, git-syncable
-- Tasks with explicit `blocked_by` dependencies form a DAG
-- `bd ready --json` returns only tasks whose dependencies are all complete
-- Hash-based IDs prevent merge collisions across parallel agents
-- Compaction summarizes old closed tasks to save context window
+| Stage | Domain | State |
+|---|---|---|
+| 1 | **Governance** — [`adr-sourced-constitution`](./adr-sourced-constitution/): event-sourced ADR log → deterministic `constitution.md` | Settled, building |
+| 2 | **Planning** — [`spec-lifecycle`](./spec-lifecycle/): staged/gated issue lifecycle in the OpenSpec **format**, reimplemented in pure Go | **Shipped — v0.1.0** |
+| 3 | **Orchestration + runtime + agent abstraction** — Microsoft Conductor + claudebox + [`agent-definition`](./agent-definition.md) (agent-def spec drafted) | Designed (planned) |
+| 4 | **Proxy / observability** — LiteLLM + Langfuse | Decided, deferred |
+| 5 | **Auto-improvement** — experiment controller (online champion-challenger A/B over agent config) | Designed, deferred |
 
-### 3. Visualization — BeadBoard
-- Community dashboard for Beads
-- Live DAG visualization, agent status, progress tracking
+## Settled primitives
 
-### 4. Workflow Definition — Conductor YAML Syntax
-- Borrowed from [microsoft/conductor](https://github.com/microsoft/conductor)
-- YAML-defined DAG workflows with phases, tasks, dependencies, gates
-- Per-agent model overrides (Opus for orchestration, Sonnet for execution)
-- Human-in-the-loop gates at phase boundaries
-- Deterministic routing — zero LLM tokens spent on orchestration
+### `adr-sourced-constitution` (Stage 1)
+Event-sourced ADR log projected deterministically into `constitution.md` — the
+governed **HOW** of a project. Go single-binary CLI + agent-agnostic skills.
+MADR-compliant; append-only; tool-only writes.
 
-### 5. Orchestration Runtime — Claude Code
-- Opus thread reads workflow definition + Beads state
-- Dispatches tasks to Sonnet subagents via `Agent` tool
-- `model: "sonnet"` for implementation, `model: "opus"` for planning/review
-- `isolation: "worktree"` for runtime isolation
-- `run_in_background: true` for parallel execution
-- Gate checks (test commands) run between phases
-- All usage under Claude Max subscription — no separate API billing
+### `spec-lifecycle` (Stage 2) — shipped
+The planning module: a staged, gated issue lifecycle (**refine → design → plan**,
+each emitting a human-approved artifact into a per-issue change folder), plus the
+living-spec fold on archive and the seams to the constitution and to an external
+enforcement engine. It **conforms to the OpenSpec on-disk format** (directory
+layout, delta grammar, fold semantics) but **reimplements the whole engine in
+pure Go — no OpenSpec runtime, no Node, no shell-out.** Six verbs: `init`,
+`validate`, `approve`, `status`, `archive`, `guard`. Gates are **records, not
+enforcement** — the primitive writes them; an engine (Conductor) or CI reads and
+blocks. Files are the canonical interface.
 
-## Execution Flow
+## Planned stages (design-ahead)
 
-1. **Plan** — Opus runs the planning skill, producing a Beads DAG from requirements
-2. **Dispatch** — Opus queries `bd ready --json`, dispatches ready tasks to Sonnet subagents
-3. **Execute** — Each Sonnet subagent works in an isolated worktree on its assigned task
-4. **Complete** — On success, Opus runs `bd close <task-id>`
-5. **Gate** — When all tasks in a phase are done, Opus runs the phase gate (e.g., `./gradlew test`)
-6. **Advance** — If gate passes, Opus queries `bd ready --json` again for the next phase
-7. **Stop** — If gate fails, Opus reports and awaits human decision
+Stage 3+ is designed but **not built** — nothing starts until `spec-lifecycle`
+dogfooding surfaces the need. The current design:
 
-## Open Problems (Next Session)
+- **Orchestration = Microsoft Conductor** (`microsoft/conductor`, MIT) —
+  deterministic YAML route/`when` workflow engine. *(Not Conductor.build, the
+  Melty macOS app.)*
+- **Runtime = claudebox / Docker.** microVMs evaluated and deferred.
+- **Agents = [`agent-definition`](./agent-definition.md)**, a custom neutral
+  primitive (own repo + submodule; **spec drafted**): minimal fields
+  `system_prompt` / `skills` / `model` + experiment slots, **conforming to the
+  Agent Format envelope** (`.agf.yaml`) with a thin owned extension for `skills` +
+  `harness`; conform-to-format / own-the-engine, same play as `spec-lifecycle`. A
+  def materializes → `.claude/agents/<role>.md` in claudebox. Approval is
+  **launch-context-bound** — never in a headless agent's tool surface.
+- **Proxy/obs = LiteLLM + Langfuse** (Stage 4).
+- **Auto-eval = online champion-challenger A/B** over agent config (Stage 5) —
+  not GEPA text-mutation.
 
-- **Spec rot** — keeping specs in sync with evolving implementation
-- **Requirement separation** — formal split of:
-  - Functional requirements (what the system does)
-  - Non-functional requirements (performance, security, reliability)
-  - Technical architecture (rigid, project-level decisions)
-- **Spec vs documentation** — specs are forward-looking (what to build); docs are backward-looking (synthesis of what was built). How to manage the lifecycle.
+Full design + open questions: [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md).
 
-## Research Reference
+## Two driving modes (control-flow model)
 
-Full research report with 38 evaluated tools: [tasks/research-agentic-workflow-tools.md](../tasks/research-agentic-workflow-tools.md)
+One workflow, two modes: **Mode A** (interactive planning — human collaborates,
+approves conversationally; the engine is passive) and **Mode B** (headless
+execution — Conductor drives). The file-based gate records are the identical seam
+under both. See [`mvp-plan.md`](./mvp-plan.md) §2.
+
+## Map of the repo
+
+- **Designs:** [`planning.md`](./planning.md), [`mvp-plan.md`](./mvp-plan.md), [`observability.md`](./observability.md)
+- **Primitive specs (pre-extraction):** [`agent-definition.md`](./agent-definition.md) (Stage 3, design drafted)
+- **Methodology umbrella:** [`kentra-sdlc.md`](./kentra-sdlc.md) (parked / conventions-only)
+- **Resumable session state:** [`tasks/planning-module-handoff.md`](./tasks/planning-module-handoff.md), [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md)
+- **Decision research:** [`references/`](./references/) — latest: [`references/sdd-framework-research-2026-07.md`](./references/sdd-framework-research-2026-07.md)
+- **Deferred ideas:** [`roadmap-ideas.md`](./roadmap-ideas.md)
+
+## Glossary guard
+
+**SDD** here = **spec-driven development** (not Obra Superpowers' "subagent-driven
+development" — different thing).
+
+---
+
+*Historical note: earlier revisions of this repo described a Spec-Kit + Beads +
+BeadBoard architecture. That was dropped — Spec-Kit eliminated
+([research](./references/sdd-framework-research-2026-07.md)), Beads never adopted.
+Do not build from git history that references them.*

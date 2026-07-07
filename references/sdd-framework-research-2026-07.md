@@ -2,6 +2,8 @@
 
 *Four parallel research agents (Superpowers, OpenSpec, Spec-Kit re-eval, bespoke-baseline + field scan), all scoring the same rubric R1–R9 derived from [tasks/planning-module-handoff.md](../tasks/planning-module-handoff.md). All claims verified against live primary sources 2026-07-02. Supersedes [spec-kit-ecosystem-research.md](./spec-kit-ecosystem-research.md) for the P0 question.*
 
+> **⏱ OUTCOME UPDATE — 2026-07-06.** This research picked **OpenSpec** for the P0 question, and it won — but the final decision **reversed how** we consume it. **Option B (pure Go):** we adopt OpenSpec's on-disk *format* (layout, delta grammar, fold semantics) and **reimplement the engine in Go — no OpenSpec/Node runtime is installed or executed.** The scorecard below is still valid for *format* fit; wherever it implies running the OpenSpec tool, that's superseded. Result: `spec-lifecycle` v0.1.0, shipped. Rationale in [`spec-lifecycle/implementation-plan.md`](../spec-lifecycle/implementation-plan.md) §0–§2.
+
 **Rubric:** R1 staged artifacts + human gates · R2 folder-per-issue + file-record interface · R3 living-spec rollup + archive/compaction · R4 runtime-agnostic · R5 clean seam to `adr-sourced-constitution` · R6 extend-without-fork + upgrade path · R7 does not own orchestration (Conductor-compatible) · R8 maturity mid-2026 · R9 validation contracts / plan granularity / bug repro-first.
 
 ## Consolidated scorecard

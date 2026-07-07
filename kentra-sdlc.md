@@ -24,7 +24,7 @@ idea / TODO  →  issue  →  [ refine → design → plan ]  →  execution  �
 | Concern | Home | Status |
 |---|---|---|
 | Governance — the *HOW* of the project (decisions, invariants) | [`adr-sourced-constitution`](./adr-sourced-constitution/) — ADR log → `constitution.md` | design complete; implementing |
-| Issue lifecycle — refine → design → plan, living-spec fold | [`spec-lifecycle`](./spec-lifecycle/) — gates, records, `kentra-spec-lifecycle` schema | design pending review |
+| Issue lifecycle — refine → design → plan, living-spec fold | [`spec-lifecycle`](./spec-lifecycle/) — gates, records, `kentra-spec-lifecycle` schema | **shipped — v0.1.0** (pure-Go engine; PR #1 → `main`) |
 | TODO capture (pre-issue) | §4.1 convention below | deferred (convention leaning documented) |
 | Documentation (human reference from specs + constitution + code) | §4.2 | deferred / unplanned |
 
@@ -53,7 +53,7 @@ Canonical state is human-diffable files in the repo; **git provides ACID** for t
 | ACID | Mechanism |
 |---|---|
 | Atomicity | one commit = one atomic multi-file write; per-file writes use temp-file + `rename()` (the constitution's atomic-write internal) |
-| Consistency | `lifecycle guard` + `openspec validate` + `constitution guard` as pre-commit/CI checks |
+| Consistency | `lifecycle validate` + `lifecycle guard` + `constitution guard` as pre-commit/CI checks (pure-Go; no OpenSpec runtime — Option B) |
 | Isolation | branch-per-change / worktree-per-agent + the GitHub claim-mutex serializing work at capability grain |
 | Durability | the git object store + remote |
 
