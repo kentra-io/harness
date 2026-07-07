@@ -27,3 +27,12 @@ provisioning:
   elements: []
 docker:
   testcontainers: false
+security:
+  # Opt-in for the orchestration build (M2-pre, user-authorized 2026-07-07):
+  # lets an in-box `cb run` create sibling boxes. Non-escalating — the proxy
+  # still pins claudebox.project-path to the requester's own project and
+  # confines bind-mount sources to the requester's own mounts. Requires the
+  # host cb + claudebox-socket-proxy image rebuilt from claudebox main, and
+  # the proxy container recreated (EnsureSocketProxy won't replace a running
+  # one).
+  allow_nested_box_creation: true
