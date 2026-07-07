@@ -22,8 +22,6 @@ claude:
   max_turns: 50
   system_prompt: ""
   idle_notification: true
-  session_capture: true
-  continuous_learning: true
 provisioning:
   bind_claude_dir: true
   elements: []
