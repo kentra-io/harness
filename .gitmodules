@@ -10,3 +10,7 @@
 	path = kentra-agentic-plugins
 	url = git@github.com:kentra-io/kentra-agentic-plugins.git
 	branch = main
+[submodule "agent-orchestration"]
+	path = agent-orchestration
+	url = git@github.com:kentra-io/agent-orchestration.git
+	branch = main
