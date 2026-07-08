@@ -56,8 +56,8 @@
       verification harness · Conductor-MCP             the operator MCP
   ─────────────────────────────────────────────
   agent-definition   →  compiled personas         ← Implementer / Verifier / Orchestrator run via
-  claudebox          →  per-agent sandbox+overlay    ClaudeboxProvider (`claude -p --agent`), one
-  spec-lifecycle     →  the plan + gates + records   worktree per change, isolated skill/plugin overlay
+  claudebox          →  per-agent sandbox+`.claude`  ClaudeboxProvider (`claude -p --agent`), one
+  spec-lifecycle     →  the plan + gates + records   worktree per change, materialized `.claude` per agent
   adr-sourced-const. →  the governed HOW
 ```
 
@@ -151,7 +151,7 @@ This is what makes the Implementer's "follow the plan to the letter and flag dev
 
 - **Diff-confined-to-declared-paths.** The milestone's validation contract declares an **allowed path-set**; Conductor checks the diff's file list against it. Any out-of-path file is a **mechanical** deviation flag (no LLM) — the cheapest, highest-signal adherence gate we have (from Factory's "diff confined to agreed paths").
 - **Deviation log.** Declared deviations append to `spec-lifecycle`'s `deviation.json`; the Verifier cross-checks that every real deviation it finds was declared (§5.2).
-- **Tamper-proofing (from the sandbox spike, §16).** The Implementer runs with **no WebSearch/WebFetch tools** (removes the "google the answer / find the merged PR" channel for free, at the agent-def layer — §8); acceptance tests/spec/tasks are **read-only to the Implementer** via a `:ro` mount ridden on the claudebox overlay seam (§8). Network-egress control and git-history denial were **spiked and rejected** as not-cheap / not-relevant (§8, §16).
+- **Tamper-proofing (from the sandbox spike, §16).** The Implementer runs with **no WebSearch/WebFetch tools** (removes the "google the answer / find the merged PR" channel for free, at the agent-def layer — §8); acceptance tests/spec/tasks are **read-only to the Implementer** via a `:ro` mount ridden on the claudebox `claude_dir_source` provisioning seam (§8). Network-egress control and git-history denial were **spiked and rejected** as not-cheap / not-relevant (§8, §16).
 
 ### 5.4 Judge hygiene (the L3 agent) and flakiness
 
@@ -210,10 +210,10 @@ Authority rides the **launch context, not the agent** (agent-definition §7, loc
 ## 8. Runtime and isolation
 
 - **ClaudeboxProvider (the seam).** Every Mode-B step runs through the custom provider (~250–400 LOC Python, fork-carried — §2): compile the agent-def (agent-definition §5) → `claude -p --agent <role>` inside the change's claudebox → capture the structured result. **Never** Conductor's default `claude` provider (raw API — would never see the materialized agent, its skills, or the sandbox). Shared with agent-definition (§14.6).
-- **Per-agent skill/plugin overlay.** Each agent's sandbox mounts the provisioning overlay (agent-definition §5.1) over `~/.claude/skills` + `~/.claude/plugins`, empty-by-default so no host operator scope leaks. The primitives' *ongoing* skills ride the worktree channel for free.
+- **Per-agent materialized `.claude`.** Each agent's sandbox gets a caller-materialized artificial `~/.claude` (skills/ + plugins/ + settings.json + role CLAUDE.md) copied in via claudebox's `provisioning.claude_dir_source` (agent-definition §5.1) — **no host `~/.claude` bind**, only `.credentials.json` injected — so the host operator's scope is physically absent, not just shadowed. The primitives' *ongoing* skills ride the worktree channel for free.
 - **Sandbox constraints (from the 2026-07-07 spike, §16).** The spike costed the anti-reward-hacking constraints against the claudebox fork's actual source and concluded:
   - **No web tools for the Implementer** — the free, effective version of "deny web egress." Done at the agent-def / settings layer (`disallowedTools` / the skills allow-list), zero claudebox plumbing. Kills the "google the answer / find the merged PR" channel. (Residual: the image ships `curl`/`bash`, so it is a guardrail against an honest agent, not an airtight boundary — acceptable for our threat model.)
-  - **Read-only test/spec mounts** — a nested `:ro` mount over the RW worktree (~15–30 LOC). **Not** a standalone task: it rides the claudebox overlay seam we are already building (near-zero marginal cost there).
+  - **Read-only test/spec mounts** — a nested `:ro` mount over the RW worktree (~15–30 LOC). **Not** a standalone task: it rides the claudebox `claude_dir_source` provisioning seam we are already building (near-zero marginal cost there).
   - **Network-egress control — rejected.** `--network none` is a non-starter (the in-container `claude` needs `api.anthropic.com`); selective egress needs a fragile proxy+firewall that is effectively defeated on Docker Desktop/macOS — the fork's own `todo/host-isolation.md` already reached this conclusion and accepted the limitation.
   - **Git-history denial — rejected.** Meaningless for net-new feature work (no "fix commit" to find) and invasive to implement.
 
@@ -246,7 +246,7 @@ Mirrors the siblings' shape, adapted to a module that *extends* an engine rather
 The behavioral contracts (§6) shipped as the Implementer/Verifier/Orchestrator agent-defs (kentra's branded cast) + any operator skill (e.g. a `resolve-escalation` skill for the Mode-A human). Thin — this module is driven by Conductor, not conversationally.
 
 ### 11.3 Layer 3 — INTEGRATIONS
-Conductor (extended), claudebox (runtime + overlay seam), agent-definition (the personas), spec-lifecycle (plan + gates + the §5.5 additions), adr-sourced-constitution (governed HOW), Stage 4 (LiteLLM+Langfuse — reads the correlation metadata), Stage 5 (the controller — reads the per-variant seam).
+Conductor (extended), claudebox (runtime + `claude_dir_source` provisioning seam), agent-definition (the personas), spec-lifecycle (plan + gates + the §5.5 additions), adr-sourced-constitution (governed HOW), Stage 4 (LiteLLM+Langfuse — reads the correlation metadata), Stage 5 (the controller — reads the per-variant seam).
 
 ### 11.4 Neutral mechanism vs. branded methodology
 Per ADR-0002. The **mechanism** — the Conductor-driving execution loop, the ClaudeboxProvider, the verification harness, the escalation state machine, the MCP — is framework-neutral and reusable → candidate **neutral primitive** (own repo + submodule). The **branded composition** — the specific kentra cast, the concrete workflow wiring, the methodology — is `kentra-`-layer content (harness / `kentra-sdlc`). The exact neutral/branded cut + the repo name are open (§14.1).
@@ -286,7 +286,7 @@ Versioned like the siblings (unknown `schemaVersion` ⇒ refuse; no migration ma
 ## 14. Open items — build-time spikes (not blockers)
 
 1. **Neutral/branded cut + repo name (§11.4).** ✅ **RESOLVED 2026-07-07: `agent-orchestration`** (user lock); the cut is the plan's P1 — neutral repo = templates + harness + resume seam + MCP (+ the `kentra-io/conductor` fork carrying the provider); branded layer (kentra cast, hand-materialized personas, concrete wiring) stays in the harness.
-2. **Coarse-then-fine or fine-direct.** ✅ **RESOLVED 2026-07-07: fine-direct.** The coarse wrap's inner loop (opaque native nesting) is throwaway; the plan sequences the shared plumbing first (overlay seam → ClaudeboxProvider → single-milestone loop → ladder → verification layers) so an early end-to-end demo still exists without building a disposable mode. See [`orchestration-implementation-plan.md`](./orchestration-implementation-plan.md).
+2. **Coarse-then-fine or fine-direct.** ✅ **RESOLVED 2026-07-07: fine-direct.** The coarse wrap's inner loop (opaque native nesting) is throwaway; the plan sequences the shared plumbing first (`claude_dir_source` provisioning seam → ClaudeboxProvider → single-milestone loop → ladder → verification layers) so an early end-to-end demo still exists without building a disposable mode. See [`orchestration-implementation-plan.md`](./orchestration-implementation-plan.md).
 3. **Canonical home of `Needs human input` (§7.1).** Conductor run-state vs. a `spec-lifecycle` change status vs. a GitHub Projects field — where the change-level status is authoritative and how the three views stay consistent.
 4. **The `spec-lifecycle` §5.5 change** (plan-template validation contract + archive tasks-gate + real `apply` block). Its own change folder; this module depends on it. (The deferred "execution seam" from the handoff — the orchestrator now exists, so it's unblocked.)
 5. **Trigger mechanism (§13).** Poll `lifecycle status` for plan-approved changes vs. explicit `execute-change` invocation for v1.
