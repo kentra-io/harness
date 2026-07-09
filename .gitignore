@@ -12,3 +12,4 @@ claudebox/
 
 # Claude Code per-machine local settings (never shared)
 .claude/settings.local.json
+.worktrees/
