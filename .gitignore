@@ -10,6 +10,15 @@ references/fabro/
 # claudebox tool checkout (its own git repo — external clone, not a submodule)
 claudebox/
 
+# kafka-dq M9 dogfood testbed (its own nested git repo — not a submodule)
+kafka-dq/
+
+# kentra-skills scratch working copy (own git repo; canonical home = kentra-io/kentra-skills)
+.claudebox/tmp/kentra-skills/
+
 # Claude Code per-machine local settings (never shared)
 .claude/settings.local.json
 .worktrees/
+
+# Retro transcript archives (large; working copies for retros, not repo history)
+tasks/retro-archive/
