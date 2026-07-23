@@ -8,6 +8,14 @@ network:
 env:
   GITHUB_TOKEN: ${KENTRA_BOT_GH_TOKEN}
   GH_TOKEN: ${KENTRA_BOT_GH_TOKEN}
+  # Opt this project's boxes into the host agent-orchestration daemon so
+  # in-box sessions can run `orch runs`/`orch status` (the query surface —
+  # launches stay host-side). No secret in the file: the token interpolates
+  # from the shell at `cb run` (interactive boxes: `eval "$(orch daemon env)"`
+  # first; daemon-launched boxes resolve it themselves). After changing either
+  # value, recreate the container from a fresh shell (`cb rm && cb run`).
+  ORCHESTRATION_DAEMON_URL: http://host.docker.internal:8765
+  ORCHESTRATION_DAEMON_TOKEN: ${ORCHESTRATION_DAEMON_TOKEN}
   # Force every commit made inside claudebox to the kentra-gh-bot (token owner)
   # identity. These GIT_* vars sit above even repo-local user.name/user.email in
   # git's precedence, so per-repo overrides (e.g. the harness repo's committed

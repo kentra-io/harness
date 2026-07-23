@@ -48,6 +48,18 @@ RUN ARCH=$(dpkg --print-architecture) \
 # exactly what M2 (overlay seam) development needs.
 RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
 
+# --- orch: the agent-orchestration CLI (in-box query surface) ---
+# In-box `orch runs`/`orch status` reach the HOST daemon via
+# ORCHESTRATION_DAEMON_URL/ORCHESTRATION_DAEMON_TOKEN (config.yaml env);
+# launches stay host-side. Installed system-wide (tool venv + managed
+# python under /opt, launcher in /usr/local/bin) so the runtime `agent`
+# user can run what root installed.
+RUN env UV_PYTHON_INSTALL_DIR=/opt/uv/python \
+        UV_TOOL_DIR=/opt/uv/tools \
+        UV_TOOL_BIN_DIR=/usr/local/bin \
+    uv tool install --python 3.12 git+https://github.com/kentra-io/agent-orchestration \
+ && orch --help >/dev/null
+
 # --- kentra SDD primitives: constitution + lifecycle on PATH ---
 # Pinned static release binaries, checksum-verified (see
 # spec-lifecycle/docs/releasing.md). Both are CGO-free single binaries —

@@ -1,65 +1,63 @@
-# spec-lifecycle v1 build — orchestration tracker
+# Fix open orchestration issues + wire harness box for orch (2026-07-23)
 
-*Session 2026-07-04. Orchestrator: Fable (main loop). Implementation subagents: Sonnet. Verification subagents: Opus. Per-problem fix budget: 2 retries, then escalate to user. (Prior todo.md — library-analysis tracker, completed — replaced; its outcomes live in `references/library-analysis.md`.)*
+*Delegated fully autonomous by user (this session). Prior todo.md — spec-lifecycle v1 build tracker, completed 2026-07-06 — replaced; its outcomes live in memory + tasks/planning-module-handoff.md.*
 
-Plan of record: `spec-lifecycle/implementation-plan.md` (Option B, pure Go). Work happens in the `spec-lifecycle/` submodule on branch `build/v1`; committed per green milestone.
+## A. Conductor fork patches (kentra-io/conductor) — DONE
+- [x] Patch branch on the fork's `kentra-patches` lineage (tip was 5a80095, the pin)
+- [x] Patch 1: `limit=` (64 MiB) on the streaming `create_subprocess_exec` (StreamReader 64 KiB kill)
+- [x] Patch 2: classify retryability against stderr + noise_lines tail + `result_error_message` (transient API error kill). Deviation from the stopgap sketch: agent-generated content deliberately EXCLUDED (keyword-matching agent prose → false retryables)
+- [x] Regression tests (proven to fail on the unpatched provider); fork suite green (20 pre-existing env failures identical on base)
+- [x] Pushed as `kentra-io/conductor@ab0ff4c` (branch `kentra-patches`)
+- [x] Pin bumped + `uv sync` on host + hermetic corpus unchanged vs main → PR #18 MERGED, CI green
+- [x] docs/conductor-fork-patches-pending.md → patch RECORD, nothing pending (auth-masking had already shipped in fork 088e35c)
 
-## Milestones
+## B. Milestone auto-commit + resume auth pre-flight — DONE (PR #19 MERGED)
+- [x] `orchestration/launch/milestone_commit.py` (+ ruff-format follow-up on main)
+- [x] milestone.yaml `commit` script step on verifier-pass route; inputs change_id/commit_dry_run/commit_paths; max_iterations 20→22
+- [x] execute-change.yaml forwarding (dict-`get` access — plans without `contract` must not trip StrictUndefined)
+- [x] Launcher: production tier sets `commit_dry_run=false` + passes change_id
+- [x] Daemon resume: box health/auth pre-flight + one non-interactive `cb login` heal + classified ResumeError
+- [x] 20 new tests; suite 227 passed (same 4 env failures as main: live daemon holds test port range)
+- [x] Tag `v0.2.2` → GHCR daemon image published; local daemon image rebuilt (`make daemon-image`)
 
-- [x] M0 — Repo bootstrap + copy frozen helpers — **DONE** (commit `78094ad`, verified round 1, 0 fixes; GitHub-CI legs deferred — no remote repo)
-- [x] M1 — Format engine + conformance corpus — **DONE** (commits `b7e985d` + `22b8ee1`, verified round 1, 0 agent fixes + 1 orchestrator infra fix; CI green all 6 OS/Go legs + lint)
-- [x] M2 — Schema + custom-artifact validation — **DONE** (commits `dedfa75` + `4704ade`, verified round 2 after 1 coverage-fix round + 1 orchestrator Windows-CI fix)
-- [x] M3 — approve/status/config/constitution seam — **DONE** (commit `53f5fec`, verified round 2 after 1 fix round; CI green all legs)
-- [x] M4 — archive + baseline ledger — **DONE** (commits `8f16e89` + `1373316`, verified round 2; CI green all legs after testutil fix)
-- [x] M5 — guard — **DONE** (commit `694b745`, verified round 1, 0 fixes; CI green all legs first try — testutil discipline worked)
-- [x] M6 — init + integration wiring — **DONE** (commit `5bcf1f7`, verified round 3 after 2 fix rounds via recovery workflow `wf_dfd30a87-93d`; original `wf_b0ee51ab-93e` died to infra errors — partial work salvaged + gap-filled, not rewritten; CI green all 7 jobs incl. Windows first-try)
-- [x] M7 — Skill bodies + dogfood — **DONE incl. §12.1 live spike (Claude Code leg, 2026-07-06)** (commit `3dbffd9`, verified round 3 after 2 fix rounds, workflow `wf_a7040d33-9c9`; CI green all 8 jobs incl. first self-guard run; live spike = user drove issue #3 end-to-end → `e057640` + fan-out repair `518f1cb`; second-runtime leg deferred)
-- [x] M8 (prep scope) — Distribution — **DONE** (commit `2fda680`, verified round 1, 0 fixes, workflow `wf_59df1dde-a1f`; **v0.1.0 TAG CUT BLOCKED on user: org-level HOMEBREW_TAP_TOKEN + §12.1 live-spike sign-off**)
-- [ ] M9 — Harness acceptance on kafka-dq — **BLOCKED: testbed repo not created + v0.1.0 not cut**
+## C. Harness .claudebox wiring for orch — DONE (recreate + daemon restart completed after user closed box/run)
+- [x] config.yaml: ORCHESTRATION_DAEMON_URL + ORCHESTRATION_DAEMON_TOKEN env
+- [x] Dockerfile: `orch` baked (uv tool → /usr/local/bin, tool venv + managed python under /opt so the `agent` user can run it)
+- [x] Image rebuilt (`cb build` → claudebox-project-0f14d014fb55)
+- [x] Verified end-to-end from a throwaway container off the new image: `orch runs` as user `agent` reaches the host daemon with the real token
+- [x] Host `orch` CLI upgraded (was pre-#17 — no `daemon env`; now current)
+- [x] Box recreated (`cb rm && cb run --detach` with daemon token in shell): new image, env wired, in-box `orch runs`/`orch status` verified against the daemon
+- [x] Daemon restarted onto the rebuilt image; verified in-container: patched conductor (`_STREAM_READ_LIMIT` present), `milestone_commit` module present, resume `preflight_box_auth` present
 
-## Build review (2026-07-05 — automatable scope complete)
+## Wrap-up
+- [x] Harness tasks/*.md incident notes → resolution status
+- [x] Auto-memory updated
+- [x] Review below
 
-Everything buildable without the user is DONE: M0–M8-prep, 10 commits on `build/v1`, every milestone adversarially verified (Opus) before landing, CI green on all legs after every push. Draft PR #1 body carries the milestone map. No problem ever consumed its 2-fix budget (the escalation rule never fired; all orchestrator-level fixes were the Windows-CI class, each first-try). Total ~3.4M subagent tokens across 9 milestone workflows.
+## Review
 
-**Remaining, ALL user-blocked:**
-1. ~~**§12.1 live-agent spike** (Claude Code leg)~~ **DONE 2026-07-06**: user drove issue #3 through the full lifecycle live (refine → design-skip → plan → archive → guard clean) and shipped a real artifact (`/lifecycle-new-feature`); artifacts independently verified (gate records, deviation.json, ledger hashes, from-empty replay). Consent discipline held per user ("worked well"). Second-runtime leg stays deferred. Note: the runbook's planted-deviation scenario (002-status-json + ADR-0003 bait) was NOT exercised — deviation-blocking has only role-play + e2e-test evidence, not live-session evidence; acceptable residual, revisit if it ever misbehaves.
-2. ~~**Org-level `HOMEBREW_TAP_TOKEN`** (§10.4)~~ **RESOLVED 2026-07-06**: org secret live (visible to both primitive repos, verified via API); old repo-level secret on the constitution removed.
-3. ~~**Cut `v0.1.0`**~~ **DONE 2026-07-06**: PR #1 merged to main (`b721972`, merge commit), tag pushed, release.yml green — 6 archives + checksums on the GitHub release, `lifecycle.rb` cask live in `kentra-io/homebrew-tap` (org token worked cross-repo). Binaries download+checksum+run verified for both primitives.
-4. **kafka-dq testbed** for M9 (repo not created) — **the one remaining blocker**.
-5. ~~After merge of PR #1 → bump the harness submodule pointer~~ **DONE**: harness commit `9eed002` (submodule → v0.1.0 main; `.claudebox/Dockerfile` switched to checksum-verified release tarballs — host still needs `cb build && cb rm && cb run`).
-6. **Implement issue #2** (`lifecycle status --format json`): intentionally NOT implemented — it's planning-stage work that should go through the pipeline itself (`/lifecycle-refine` against issue #2). It's also the S3 poll seam (R1), so doing it before Conductor work starts is natural.
+All three open issues fixed and merged to agent-orchestration main (PRs #18, #19; fork commit ab0ff4c; tag v0.2.2 published):
+1. **Transient API error kills run** → provider retry classification now sees stdout; engine `retry:` machinery handles the blip.
+2. **Milestones never committed** → deterministic paths-confined commit step on the verifier-pass route (production tier only; hermetic stays dry-run).
+3. **Box auth expiry masquerade** → masking fixed earlier in fork 088e35c; resume now pre-flights + self-heals via `cb login`, else fails with classified remedy.
 
-## Parked for orchestration (S3) — from spike findings
+Harness box is wired for `orch` and the daemon runs the new image (user closed the box + killed the running 001-dag-plan-primitive run to unblock; that run shows `dead: unknown` in the registry and would need a re-launch under the new code).
 
-- **Issue-status sync**: close the source-tracking GitHub issue when its change archives (finding #5).
-- **Execution-phase seam**: `lifecycle-apply` skill + archive tasks-completion gate (finding #3).
+**End-to-end verification (2026-07-23, post-restart):**
+- Hermetic stub launch `e2e-verify` through the NEW daemon: done/success; event stream shows the `commit` step executing after each verifier pass; both milestones report `commit_status: "dry_run"` (correct hermetic behavior).
+- Production-tier launcher argv verified: `commit_dry_run=false` + `change_id` forwarded when box enabled.
+- Real-commit path proven through the actual conductor engine: milestone.yaml standalone (stub provider, `commit_dry_run=false`) against a scratch git repo → real commit `M3: Verify real commit (zz-test)`, fallback identity, clean worktree after, `commit_status: "committed"` in workflow output.
+- In-box: `orch runs`/`orch status` work from the recreated box (env baked at creation; `orch` at /usr/local/bin).
+- Test worktrees/branches/fixtures cleaned; `e2e-verify` kept in the registry as a done record.
 
-## Spike findings (accumulating, 2026-07-06)
+Not committed in the harness repo (user's active branch `design/planning-domain` carries in-flight work): `.claudebox/config.yaml`, `.claudebox/Dockerfile`, tasks notes, and the agent-orchestration submodule pointer (submodule checked out at new main `79625fc`).
 
-1. ~~**No discoverable entry point for "start a new change"**~~ **RESOLVED by the spike itself**: user filed issue #3 and drove it through the full lifecycle (refine w/ design-skip → plan → archive, ledger seq 2, guard clean) → shipped `/lifecycle-new-feature` intake skill (commit `e057640`). The primitive's first real self-hosted change.
-2. **Binaries not on box PATH** — fixed durably: `.claudebox/Dockerfile` now go-installs `constitution@v0.1.1` + `lifecycle@2fda680`; **host must `cb build && cb rm && cb run` to pick it up (not yet done — the #3 spike session still had to build from source)**; switch to release-binary COPY after v0.1.0 and bump the pin past `e057640` so the box binary embeds the new skill.
-3. **Execution phase has no skill and archive has no tasks-completion gate** (schema's `apply` block anticipates it; no Go code parses checkboxes) — **DEFERRED by user decision: tackle after the orchestrator (Conductor, S3) exists**; sketch = neutral `lifecycle-apply` skill + archive completion-check with honest override, driven as a dogfood change.
-4. **Skill fan-out drifts when edited by hand** — the #3 spike agent hand-copied the new skill into `.claude/skills/` instead of re-running `lifecycle init`, so `.cursor/`+`.agents/` trees and the `openspec/.state` manifest silently drifted. Repaired (commit `518f1cb`). Possible hardening: a CI check that fan-out trees match the embedded `skills/` source (self-guard extension) — backlog, not urgent.
-5. **Source-tracking issue not closed on archive** — change `003` archived but GitHub issue #3 stayed Open; nothing in the CLI or skills syncs issue state (join key is read-only today). **User decision: park for the orchestration layer (S3)** — likely a step after archive (orchestrator or archive-skill closes the issue with a link to the archived change + ledger seq). Neutral-primitive question to settle then: does `lifecycle-archive` prose-instruct a `gh issue close`, or does that stay branded/orchestrator-side?
+## 2026-07-23 (evening): shared live credential for all boxes (hands-off session)
 
-## Escalations for user (accumulating)
+Goal (user-locked): ONE shared refreshing OAuth credential — host `~/.claude/.credentials.json` — serving interactive claudebox sessions AND orch agent boxes; no per-box provisioning to think about. Setup-token rejected (static, second credential).
 
-1. ~~`gh repo create` failed: PAT lacked `createRepository`~~ **RESOLVED 2026-07-04**: user fixed GitHub wiring (classic token, repo+workflow scopes); repo created at github.com/kentra-io/spec-lifecycle; `main` + `build/v1` pushed; origin = https URL (bot token). Remaining §10 items when relevant: org-level `HOMEBREW_TAP_TOKEN` for M8.
-
-## Environment facts
-
-- Go 1.26.4 linux/arm64, golangci-lint present, node/npm present, npm + Go proxy reachable.
-- `constitution` binary NOT installed; source present in `adr-sourced-constitution/` (buildable).
-- Remote `kentra-io/spec-lifecycle` does not exist; submodule has local commits only (a537997); building on branch `build/v1`.
-
-## Review log
-
-- **M8 prep scope** (wf_59df1dde-a1f, 2 agents, ~147k tok): PASS round 1, 0 fixes. goreleaser v2.17.0 snapshot: 6 static binaries + checksums + dist cask; ldflags proven live (--version shows "built <date>" segment only the ldflags path emits, not ReadBuildInfo fallback); ldd = not dynamic. Bare-env e2e (env -i, no Go/constitution): init warns → refine approve w/ --design-skip OK (gate 1 self-sufficient) → plan approve HARD exit 2 without deviation.json (matches M6/M7 semantics) → archive refused exit 1 on pending gate → --force-gates archives with gatesOverridden:true in ledger (never silent) → guard clean. Cask structurally identical to constitution's (homebrew_casks v2 key, same tap/name_template/postflight, distinct lifecycle.rb — no collision). release.yml: v* tags only, minimal permissions, SHA-pinned actions matching constitution, Go 1.26.x matches ci.yml, secret absence harmless until a tag exists. docs/releasing.md commands all verified; claudebox snippet = static binary, no Node. dist/ gitignored. Tag NOT cut (deliberate).
-- **M7 scripted scope** (wf_a7040d33-9c9, 6 agents, ~453k tok): PASS round 3. Fix rounds: r1 details in journal; r2 = lifecycle-archive exit-code table made truthful to mapArchiveError/postArchiveGuard (exit 1 = refused-nothing-written-retry; exit 2 = couldn't-run OR committed-but-post-guard-failed → escalate, no self-repair). Zero .go files changed → coverage floors untouched. Skills: 5 real bodies, no allowed-tools (house style), mutating verbs prose-guarded; plan-gate wiring truthful (constitution /plan-gate skill honors human-specified --out; `constitution deviation validate` real hidden verb; approve reads fixed <changeDir>/deviation.json, hash mismatch = warn). Verifier ROLE-PLAYED refine+design skills literally in scratch — including gate-2 refusal without deviation.json (exit 2, correct message). Dogfood genuine: repo's own openspec/ live; 3 real build-decision ADRs (constitution guard clean); change 001-capability-size-warning (real §6.4 intent) through all 3 gates → archive; both constitution hashes equal at gates 2/3; ledger pre/post image hashes independently recomputed; guard exit 0 by verifier; re-init byte-preserves dogfood artifacts. CI: self-guard job added, existing jobs untouched. Non-blocking: lifecycle.yml constitution.version empty on (devel) builds by design; design-skill "step 3" cross-ref slightly loose.
-- **M6** (recovery wf_dfd30a87-93d, 6 agents, ~483k tok; original wf_b0ee51ab-93e died to connection errors — salvage-and-complete, not rerun): PASS round 3. Fix round 1: inline comment on `schema:` key was dropped by the surgical YAML edit → setMappingScalar now mutates only Value/Tag/Style, comments survive byte-for-byte (live-verified). Fix round 2: go.mod not tidy (x/term listed indirect) → tidy now a no-op. Verified live: fresh init → full tree (descriptor byte-matches embeds, lifecycle.yml per spec §10, managed blocks, 5 skills × 3 trees) → validate clean → full approve e2e; re-init byte-identical; drift refusal NON-TTY safe (no hang, no [y/N], exit 1, names --force; --force restores to clean-baseline hash); surgical config.yaml preserves user keys+comments (documented limitation: nested re-indent only); preflight missing-binary + version-mismatch both warn (hard requirement stays at gates per §2.7); existing-project state (changes/specs/approval-state/ledger) byte-untouched on re-init; §2.10 sourceTracking warning real. Coverage: scaffold 85.4 / config 97.0 / constitution 89.5; cmd 80.1 (main pkg, outside §9 gate). Note: runtime.GOOS in main_test.go:157 is .exe build-naming, not an FS-error skip — testutil rule N/A.
-- **M5** (wf_a5d91778-1cc, 2 agents, ~379k tok): PASS round 1, 0 fixes. Coverage 99.0%. Full tamper matrix exact (archive_mutated / projection_drift caught by BOTH chain+replay / chain_break / ledger_missing / truncated-ledger exit 2); multi-finding pooling; guard 5x byte-identical; 100-seeded-history replay property. Post-archive guard runs at CLI layer (import cycle) — archives commit, pre-existing tamper exits 2. Noted: brownfield capabilities exempt from replay byte-diff (documented) but chain-covered; property test's live projection shares spec.Fold with replay (not fully independent oracle) — backstopped by tamper suite.
-- **M4** (wf_88c6e6e9-dee, 4 agents, ~552k tok): PASS round 2 (fix round: archive coverage 77.1%→92.6% + REAL atomicity bug — multi-capability folds could partially land; fixed via two-phase atomicwrite Prepare/Commit/Discard, all writes staged before any rename). Verifier byte-matched live archive runs vs corpus cases 07+08, recomputed all ledger hashes independently, proved seq folder-date-independence + append-only tamper posture. Residual documented: commit-point rename A-succeeds/B-fails edge (near-impossible, detectable, M5 guard catches). **Orchestrator fix #3 (Windows class, 3rd instance)**: ENOTDIR tests → created internal/testutil skip-guards, converted all 6 sites (1373316); lesson written to tasks/lessons.md; M5+ prompts name the class.
-- **M3** (wf_3470fe65-183, 4 agents, ~595k tok): PASS round 2 (fix round: deviationRef made change-folder-relative; approve coverage 84.8%→94.5%). Spike §12.2 CONFIRMED: `constitution deviation validate` exists — hidden verb, positional path, exit 0/1/2, cwd must be constitution project root; wrapper uses cmd.Dir=root. Live e2e with real constitution binary: full 3-gate sequence, two constitution hashes at gates 2/3, strict-consent refusal, --design-skip, reject-then-approve history, drift flagging, planted invalid deviation.json caught by real binary. Design note: `status` is read-only and never loads lifecycle.yml, so bad schemaVersion refuses in approve (exit 2) but not status — accepted.
-- **M2** (wf_0d7988a4-f2a, 4 agents, ~438k tok): PASS round 2 (fix round 1 = schema coverage 80.4%→87.0%, error-path tests). validate 90.0% / cmd 86.2% coverage. Verbs: validate wired; init correctly deferred to M6. Warning-only finding for requirement-under-unrecognized-H2 added (M1 observation). **Orchestrator fix #2 (Windows-CI class)**: the fix-round's chmod-based tests don't hold on Windows → runtime.GOOS skips (4704ade). Watch: agents keep writing Unix-only permission tests — M3+ prompts should call this out.
-- **M1** (wf_5bec89da-1d7, 4 agents, ~592k tok): PASS round 1. Provenance proven — verifier re-ran oracle fresh on all 10 cases, byte-identical. Fuzz 3.6M+2.3M execs clean. Coverage 92.6% (target 95% for core pkgs — ratchet later; uncovered = defensive branches). 5 deliberate fold divergences from oracle documented in fold.go/doc.go. Non-blocking observations parked: (a) `### Requirement:` under unrecognized H2 silently ignored (oracle-conformant; optional warning handed to M2), (b) body-content errors carry Line=0. **Orchestrator fix**: Windows CI legs failed on CRLF checkout mangling byte-exact fixtures → `.gitattributes` `* -text` (22b8ee1); CI then green on all legs.
-- **M0** (wf_c1e39089-198, 2 agents, ~167k tok): PASS round 1. atomicwrite byte-identical; scaffold block/state diffs limited to allowed deltas (markers, paths); scaffold.go = adapted fan-out engine w/ TODO(M6/M7) seams; --version via ReadBuildInfo fallback. Note: constitution CI has moved to checkout@v7 — ours pinned @v6 per plan text (deliberate, revisit at M8).
+- [ ] M0 spike: determine claude's credentials write pattern (in-place vs rename) from the npm JS bundle; fallback = overnight inode watch (baseline inode=138837378, refresh due 23:58Z)
+- [ ] M1 claudebox: provisioning option to live-mount host `.credentials.json` into `claude_dir_source` boxes (skip snapshot injection); Go tests; rebuild cb
+- [ ] M2 agent-orchestration: `materialize_box` writes the new option; keep pre-flight probe + auto cb login as fallback; tests (also carries the API-only `orch daemon status` change from earlier today)
+- [ ] M3 E2E: real box via launch path — mount present, in-box `claude -p` auths, host↔box propagation, two parallel boxes share one file
+- [ ] Report design choices
