@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "change": "001-dag-plan-primitive",
+  "issue": "kentra-io/harness#1",
+  "gates": [
+    {
+      "stage": "refine",
+      "status": "approved",
+      "designSkipped": false,
+      "artifacts": {
+        "proposal.md": "sha256:0cc12730ce84dcf389a9d95ea77c95e20df9717c92bd4819f91a836188a180b0",
+        "specs/plan-projection/spec.md": "sha256:0920be8c96202dc3589e6ff26a9f7d2146761de9df3180a615bfb0dcf97468bb",
+        "specs/plan-schema/spec.md": "sha256:88845b3912dc494d6d2c1232abc5d19d1ff7d3eba0cbd745923aeb5d489417de",
+        "specs/plan-validation/spec.md": "sha256:3cfacdddd2a19d09db884e3626b1530114d78e892da5ca042bc8d7257d53fe52"
+      },
+      "constitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationConstitutionHash": null,
+      "deviationRef": null,
+      "approvedBy": "agent",
+      "approvedAt": "2026-07-23T13:40:32Z",
+      "notes": ""
+    },
+    {
+      "stage": "design",
+      "status": "approved",
+      "designSkipped": false,
+      "artifacts": {
+        "design.md": "sha256:f2d2c6e5c5d6a34b4e088a99ab18bc087c4184c41c0daabb7e46bd6a188e1216"
+      },
+      "constitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationConstitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationRef": "deviation.json",
+      "approvedBy": "agent",
+      "approvedAt": "2026-07-23T14:21:49Z",
+      "notes": ""
+    },
+    {
+      "stage": "plan",
+      "status": "approved",
+      "designSkipped": false,
+      "artifacts": {
+        "tasks.md": "sha256:26d081894c9e266ec92995302e31518587e7b03401f50f4eaa522d4cfe4c83d8"
+      },
+      "constitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationConstitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationRef": "deviation.json",
+      "approvedBy": "agent",
+      "approvedAt": "2026-07-23T14:33:47Z",
+      "notes": ""
+    }
+  ]
+}
