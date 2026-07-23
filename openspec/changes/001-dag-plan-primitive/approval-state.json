@@ -47,6 +47,20 @@
       "approvedBy": "agent",
       "approvedAt": "2026-07-23T14:33:47Z",
       "notes": ""
+    },
+    {
+      "stage": "plan",
+      "status": "approved",
+      "designSkipped": false,
+      "artifacts": {
+        "tasks.md": "sha256:1081500b858d8836d54daf68d21dc5052b6fb35f6ec889cbb864c346f4d91eab"
+      },
+      "constitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationConstitutionHash": "sha256:8dc47d551e461c03528d548d4ac047db3e668a2d829853c22438e8e207a61715",
+      "deviationRef": "deviation.json",
+      "approvedBy": "agent",
+      "approvedAt": "2026-07-23T20:58:41Z",
+      "notes": "Re-hash tasks.md after YAML-quoting fix (6ad2e83); clears drift before clean orch re-run under fixed daemon code"
     }
   ]
 }
