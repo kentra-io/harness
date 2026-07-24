@@ -22,10 +22,10 @@
     - .github/workflows/ci.yml
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] `go mod init milestoned-plan-dag`; add MIT `LICENSE` and a `README.md` stating the primitive's purpose (machine-first YAML plan format, DAG of verifiable milestones) with no kentra branding.
-  2. [ ] Add `cmd/milestoned-plan-dag/main.go` dispatching on `os.Args[1]` to `validate`/`render`/`resolve` stub handlers (each returning "not implemented" for now) and a `--help`/usage path.
-  3. [ ] Write in-repo `spec.md` (the plan format + validator + projection contract, distilled from this change's proposal/design/spec deltas) and `implementation-plan.md` (this milestone list) per ADR-0003.
-  4. [ ] Add `.github/workflows/ci.yml` running `go build ./... && go vet ./... && go test ./...` on push/PR.
+  1. [x] `go mod init milestoned-plan-dag`; add MIT `LICENSE` and a `README.md` stating the primitive's purpose (machine-first YAML plan format, DAG of verifiable milestones) with no kentra branding.
+  2. [x] Add `cmd/milestoned-plan-dag/main.go` dispatching on `os.Args[1]` to `validate`/`render`/`resolve` stub handlers (each returning "not implemented" for now) and a `--help`/usage path.
+  3. [x] Write in-repo `spec.md` (the plan format + validator + projection contract, distilled from this change's proposal/design/spec deltas) and `implementation-plan.md` (this milestone list) per ADR-0003.
+  4. [x] Add `.github/workflows/ci.yml` running `go build ./... && go vet ./... && go test ./...` on push/PR.
 
 ## Milestone 2: Plan data model, YAML loader, and published JSON Schema
 **Goal** — Define the canonical YAML plan format as typed Go + a published draft-2020-12 JSON Schema, and load+shape-validate a plan file.
@@ -46,10 +46,10 @@
     - testdata/**
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] Define the Go model in `internal/plan/types.go` (Plan/Milestone/Contract/Step + optional slots), with slug-derivation from title.
-  2. [ ] Write `internal/plan/load.go` parsing YAML into the model, mapping `[ ]`/`[x]` to `Step.done`, and tolerating the `# yaml-language-server: $schema=` editor header.
-  3. [ ] Author `schema/plan.schema.json` (draft 2020-12) covering shape: required `schemaVersion`, required per-milestone `number`/`slug`/`contract{check,criteria,paths}`/`steps`, optional slots; embed it via `go:embed` in `internal/schema` and add a JSON-Schema shape-validation pass.
-  4. [ ] Add `testdata/valid/` fixtures (sequential, branching, contract-with-`none`, `paths: []`, optional-slots-present, optional-slots-absent) and tests asserting load + shape-validate + schemaVersion/steps/optional-slot behavior.
+  1. [x] Define the Go model in `internal/plan/types.go` (Plan/Milestone/Contract/Step + optional slots), with slug-derivation from title.
+  2. [x] Write `internal/plan/load.go` parsing YAML into the model, mapping `[ ]`/`[x]` to `Step.done`, and tolerating the `# yaml-language-server: $schema=` editor header.
+  3. [x] Author `schema/plan.schema.json` (draft 2020-12) covering shape: required `schemaVersion`, required per-milestone `number`/`slug`/`contract{check,criteria,paths}`/`steps`, optional slots; embed it via `go:embed` in `internal/schema` and add a JSON-Schema shape-validation pass.
+  4. [x] Add `testdata/valid/` fixtures (sequential, branching, contract-with-`none`, `paths: []`, optional-slots-present, optional-slots-absent) and tests asserting load + shape-validate + schemaVersion/steps/optional-slot behavior.
 
 ## Milestone 3: `validate` — DAG resolution, semantic checks, and the path-overlap warning
 **Goal** — Implement the `validate` command: shape validation plus the semantic DAG guarantees (cycle/dangling/duplicate/contract) and the non-fatal overlapping-write-paths warning.
@@ -69,11 +69,11 @@
     - testdata/**
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] `internal/dag/resolve.go`: build the edge set (explicit `depends-on` ∪ implicit preceding-milestone chain), with a reachability helper for "is there a dependency path between A and B".
-  2. [ ] `internal/dag/cycle.go`: cycle detection that names the cycle members.
-  3. [ ] `internal/validate/validate.go`: run shape validation, then reject cycles / dangling slugs / duplicate slug or number / malformed-or-missing contract (naming each offender); accept `check: none` and `paths: []`.
-  4. [ ] Add the overlapping-write-paths warning for independent milestones (glob overlap between milestones with no dependency path), non-fatal (exit 0, warning on stderr).
-  5. [ ] Wire `validate <plan.yaml>` into `cmd/milestoned-plan-dag` (exit 0 clean/warn, 1 on rejection); add `testdata/invalid/` + `testdata/warn/` fixtures and tests for every reject/warn scenario.
+  1. [x] `internal/dag/resolve.go`: build the edge set (explicit `depends-on` ∪ implicit preceding-milestone chain), with a reachability helper for "is there a dependency path between A and B".
+  2. [x] `internal/dag/cycle.go`: cycle detection that names the cycle members.
+  3. [x] `internal/validate/validate.go`: run shape validation, then reject cycles / dangling slugs / duplicate slug or number / malformed-or-missing contract (naming each offender); accept `check: none` and `paths: []`.
+  4. [x] Add the overlapping-write-paths warning for independent milestones (glob overlap between milestones with no dependency path), non-fatal (exit 0, warning on stderr).
+  5. [x] Wire `validate <plan.yaml>` into `cmd/milestoned-plan-dag` (exit 0 clean/warn, 1 on rejection); add `testdata/invalid/` + `testdata/warn/` fixtures and tests for every reject/warn scenario.
 
 ## Milestone 4: Projection — `resolve` (machine YAML) and `render` (human markdown)
 **Goal** — Emit the machine-readable YAML projection with an authoritative edge set + deterministic topological order (`resolve`), and a read-only markdown view for humans (`render`).
@@ -93,9 +93,9 @@
     - testdata/**
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] `internal/resolve/resolve.go`: reuse `internal/dag` to produce a deterministic topological order (Kahn's algorithm with a `number` tie-break), then marshal the projection struct (edges + order + full per-milestone data) to YAML.
-  2. [ ] Wire `resolve <plan.yaml>` into `cmd/milestoned-plan-dag` with YAML-only output and no `--format` flag; add a golden fixture + a determinism test (emit twice, assert byte-identical).
-  3. [ ] `internal/render/render.go`: YAML model → markdown matching the human `tasks.md` shape (Goal/Deliverables/Validation contract/Steps with `[ ]`/`[x]`); wire `render <plan.yaml>` and add a golden-markdown test.
+  1. [x] `internal/resolve/resolve.go`: reuse `internal/dag` to produce a deterministic topological order (Kahn's algorithm with a `number` tie-break), then marshal the projection struct (edges + order + full per-milestone data) to YAML.
+  2. [x] Wire `resolve <plan.yaml>` into `cmd/milestoned-plan-dag` with YAML-only output and no `--format` flag; add a golden fixture + a determinism test (emit twice, assert byte-identical).
+  3. [x] `internal/render/render.go`: YAML model → markdown matching the human `tasks.md` shape (Goal/Deliverables/Validation contract/Steps with `[ ]`/`[x]`); wire `render <plan.yaml>` and add a golden-markdown test.
 
 ## Milestone 5: Authoring skills
 **Goal** — Ship the agent-agnostic authoring skill(s) that guide writing a valid YAML plan against this schema.
@@ -112,9 +112,9 @@
     - README.md
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] Write `skills/plan-author/SKILL.md`: the YAML grammar, the mandatory-contract rules + conscious escapes (`check: none`, `paths: []`, `**`), the DAG/implicit-chain model, and the `validate`/`resolve`/`render` workflow.
-  2. [ ] Add `skills/plan-author/example.yaml` — a small branching plan exercising slugs, `depends-on`, contracts, and checkbox steps — and confirm it passes `validate`.
-  3. [ ] Add a README section linking the skill and the JSON Schema for editor wiring.
+  1. [x] Write `skills/plan-author/SKILL.md`: the YAML grammar, the mandatory-contract rules + conscious escapes (`check: none`, `paths: []`, `**`), the DAG/implicit-chain model, and the `validate`/`resolve`/`render` workflow.
+  2. [x] Add `skills/plan-author/example.yaml` — a small branching plan exercising slugs, `depends-on`, contracts, and checkbox steps — and confirm it passes `validate`.
+  3. [x] Add a README section linking the skill and the JSON Schema for editor wiring.
 
 ## Milestone 6: Integrate as a harness submodule + record consumer follow-ons
 **Goal** — Register the finished primitive as a harness git submodule per ADR-0001 and point consumers at the CLI/YAML contract, without reworking them here.
@@ -134,6 +134,6 @@
     - tasks/dag-plan-primitive-design-handoff.md
   ```
 **Steps** — ordered breakdown, sized per `planGranularity` (lifecycle.yml, spec-lifecycle.md §10):
-  1. [ ] Push the `milestoned-plan-dag` repo and add it as a harness submodule (`git submodule add`), pinning the commit.
-  2. [ ] Add the primitive-registry line to harness `AGENTS.md` (neutral/MIT/submodule, CLI-only YAML contract, no module constitution).
-  3. [ ] Append a follow-on note to `tasks/dag-plan-primitive-design-handoff.md` scoping the two consumer reworks (spec-lifecycle plan-stage shell-out; agent-orchestration `resolve` consumption) as separate changes.
+  1. [x] Push the `milestoned-plan-dag` repo and add it as a harness submodule (`git submodule add`), pinning the commit.
+  2. [x] Add the primitive-registry line to harness `AGENTS.md` (neutral/MIT/submodule, CLI-only YAML contract, no module constitution).
+  3. [x] Append a follow-on note to `tasks/dag-plan-primitive-design-handoff.md` scoping the two consumer reworks (spec-lifecycle plan-stage shell-out; agent-orchestration `resolve` consumption) as separate changes.
