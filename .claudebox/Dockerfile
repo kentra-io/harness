@@ -60,28 +60,38 @@ RUN env UV_PYTHON_INSTALL_DIR=/opt/uv/python \
     uv tool install --python 3.12 git+https://github.com/kentra-io/agent-orchestration \
  && orch --help >/dev/null
 
-# --- kentra SDD primitives: constitution + lifecycle on PATH ---
-# Pinned static release binaries, checksum-verified (see
-# spec-lifecycle/docs/releasing.md). Both are CGO-free single binaries —
-# no Go build, no Node runtime.
+# --- kentra SDD primitives on PATH ---
+# constitution: pinned static release binary, checksum-verified (see
+# spec-lifecycle/docs/releasing.md). CGO-free single binary — no Go build.
 ARG CONSTITUTION_VERSION=0.1.1
-ARG LIFECYCLE_VERSION=0.1.0
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in amd64|arm64) ;; *) echo "unsupported arch: $arch" >&2; exit 1 ;; esac; \
     cd /tmp; \
-    for spec in \
-      "constitution adr-sourced-constitution ${CONSTITUTION_VERSION}" \
-      "lifecycle spec-lifecycle ${LIFECYCLE_VERSION}"; do \
-      set -- $spec; bin="$1"; repo="$2"; ver="$3"; \
-      base="https://github.com/kentra-io/${repo}/releases/download/v${ver}"; \
-      asset="${bin}_${ver}_linux_${arch}.tar.gz"; \
-      curl -fsSL "$base/$asset" -o "$asset"; \
-      curl -fsSL "$base/checksums.txt" -o checksums.txt; \
-      sha256sum -c --ignore-missing checksums.txt; \
-      tar -xzf "$asset" -C /usr/local/bin "$bin"; \
-      rm "$asset" checksums.txt; \
-      "$bin" --version; \
-    done
+    bin=constitution; repo=adr-sourced-constitution; ver="${CONSTITUTION_VERSION}"; \
+    base="https://github.com/kentra-io/${repo}/releases/download/v${ver}"; \
+    asset="${bin}_${ver}_linux_${arch}.tar.gz"; \
+    curl -fsSL "$base/$asset" -o "$asset"; \
+    curl -fsSL "$base/checksums.txt" -o checksums.txt; \
+    sha256sum -c --ignore-missing checksums.txt; \
+    tar -xzf "$asset" -C /usr/local/bin "$bin"; \
+    rm "$asset" checksums.txt; \
+    "$bin" --version
+
+# lifecycle (spec-lifecycle CLI): BUILT FROM SOURCE, not a release binary.
+# The only published release (v0.1.0) predates the `lifecycle apply` command
+# (added post-tag in #4), which agent-orchestration's `orch launch`/`validate`
+# require (`lifecycle apply <change> --format json`). No release carries it yet,
+# so build from a pinned commit with the Go toolchain installed above.
+# NOTE: keep LIFECYCLE_REF in sync with the harness's spec-lifecycle submodule
+# pointer (`git -C spec-lifecycle rev-parse HEAD`) whenever the submodule bumps.
+ARG LIFECYCLE_REF=60abf1d41583a81717b270a93a1887c73d84e8b1
+RUN set -eux; \
+    git clone --filter=blob:none --quiet https://github.com/kentra-io/spec-lifecycle /tmp/spec-lifecycle; \
+    cd /tmp/spec-lifecycle; \
+    git checkout --quiet "$LIFECYCLE_REF"; \
+    go build -trimpath -o /usr/local/bin/lifecycle ./cmd/lifecycle; \
+    cd /; rm -rf /tmp/spec-lifecycle; \
+    lifecycle --version
 
 USER agent
