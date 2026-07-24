@@ -1,5 +1,10 @@
 # Spec: thread `box`/`worktree` inputs into the execute-change workflow templates
 
+> **STATUS: IMPLEMENTED** — box/worktree input threading has been in
+> production use in agent-orchestration's execute-change/milestone workflows
+> for all live runs (kafka-dq 001-e2e-poc through 015-github-mirror). Kept
+> for the original diagnosis.
+
 **Status:** ready to implement (diagnosed 2026-07-14, host session, during first live run of `kafka-dq/001-e2e-poc`). Scope: `agent-orchestration` only (two workflow YAMLs, one nested-workflow declaration). Small, mechanical. The repo is lifecycle-governed — run `lifecycle status` and route per its gates.
 
 ## Problem

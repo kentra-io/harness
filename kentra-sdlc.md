@@ -61,4 +61,4 @@ Add `flock` for the one narrow intra-repo race (two `lifecycle approve` on `appr
 
 ## 6. Provenance
 
-Discussion 2026-07-03 (naming + scope): umbrella framing adopted; primitive repos stay neutral; schema → `kentra-spec-lifecycle`; this doc parked with TODO + documentation as the deferred concerns. Prior decisions: `references/sdd-framework-research-2026-07.md`, `tasks/planning-module-handoff.md`.
+Discussion 2026-07-03 (naming + scope): umbrella framing adopted; primitive repos stay neutral; schema → `kentra-spec-lifecycle`; this doc parked with TODO + documentation as the deferred concerns. Prior decisions: `references/sdd-framework-research-2026-07.md`, `tasks/retro-archive/planning-module-handoff.md` (archived).

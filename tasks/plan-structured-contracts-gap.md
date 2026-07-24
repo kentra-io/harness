@@ -28,6 +28,10 @@ gate would all have run vacuously.
      spec-lifecycle, or at minimum a documented convention to re-copy skills
      on every spec-lifecycle version bump. Candidate: a small spec-lifecycle
      change through its own pipeline.
+   - Note (2026-07-24): `milestoned-plan-dag` (shipped, pinned `78acd13`)
+     makes contract blocks mandatory-by-schema for new plans; re-check
+     whether the two owed fixes below are still needed once spec-lifecycle's
+     plan stage shells out to it (007).
 
 2. **Source template never updated (doc defect in spec-lifecycle).** The
    updated `lifecycle-plan` skill text claims "the template shows both", but

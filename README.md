@@ -22,7 +22,7 @@ methodology). See [`AGENTS.md`](./AGENTS.md) for the full convention.
 |---|---|---|
 | 1 | **Governance** — [`adr-sourced-constitution`](./adr-sourced-constitution/): event-sourced ADR log → deterministic `constitution.md` | Settled, building |
 | 2 | **Planning** — [`spec-lifecycle`](./spec-lifecycle/): staged/gated issue lifecycle in the OpenSpec **format**, reimplemented in pure Go | **Shipped — v0.1.0** |
-| 3 | **Orchestration + runtime + agent abstraction** — [`orchestration`](./orchestration.md) (Conductor-extended execution loop) + claudebox + [`agent-definition`](./agent-definition.md) (both specs drafted) | Designed (planned) |
+| 3 | **Orchestration + runtime + agent abstraction** — [`agent-orchestration`](./agent-orchestration/) (Conductor-extended execution loop) + claudebox + [`agent-definition`](./agent-definition.md) | **Shipped, live** (`agent-orchestration`); `agent-definition` still spec-only |
 | 4 | **Proxy / observability** — LiteLLM + Langfuse | Decided, deferred |
 | 5 | **Auto-improvement** — experiment controller (online champion-challenger A/B over agent config) | Designed, deferred |
 
@@ -83,7 +83,7 @@ under both. See [`mvp-plan.md`](./mvp-plan.md) §2.
 - **Designs:** [`planning.md`](./planning.md), [`mvp-plan.md`](./mvp-plan.md), [`observability.md`](./observability.md)
 - **Primitive specs (pre-extraction):** [`orchestration.md`](./orchestration.md) (Stage 3 execution loop, design drafted) + [`orchestration-implementation-plan.md`](./orchestration-implementation-plan.md) (plan drafted, pending review), [`agent-definition.md`](./agent-definition.md) (Stage 3 agent abstraction, design drafted)
 - **Methodology umbrella:** [`kentra-sdlc.md`](./kentra-sdlc.md) (parked / conventions-only)
-- **Resumable session state:** [`tasks/planning-module-handoff.md`](./tasks/planning-module-handoff.md), [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md)
+- **Resumable session state:** [`tasks/retro-archive/planning-module-handoff.md`](./tasks/retro-archive/planning-module-handoff.md) (archived), [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md)
 - **Decision research:** [`references/`](./references/) — latest: [`references/sdd-framework-research-2026-07.md`](./references/sdd-framework-research-2026-07.md)
 - **Deferred ideas:** [`roadmap-ideas.md`](./roadmap-ideas.md)
 

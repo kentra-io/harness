@@ -1,5 +1,11 @@
 # Orchestration + Runtime + Agent-Runtime — Long-Term Plan & Session Handoff
 
+> **STATUS 2026-07-24.** Stage 3 is BUILT and LIVE — agent-orchestration
+> shipped (execution leg + github-mirror, PR #31); issues #7/#9/#14/#15/#16/
+> #21/#24 closed, open: #30 (fix in flight), #32 (milestoned-plan-dag
+> consumption). agent-definition remains spec-only. This doc is historical
+> provenance; current state lives in agent-orchestration's issues/constitution.
+
 *Created: 2026-07-05. Purpose: a **self-contained resume point** for the post-`spec-lifecycle` domains (orchestration, runtime, agent abstraction, proxy, auto-improvement). Sibling to [`planning-module-handoff.md`](./planning-module-handoff.md) (which covers the `spec-lifecycle` planning module). If picking this up cold, read this top-to-bottom, then the source docs it points to.*
 
 > **One-paragraph resume.** The two foundational modules are settled: **constitution** (`adr-sourced-constitution`, building) and **planning** (`spec-lifecycle`, pure-Go, **implementing now — the critical path**). This doc plans everything *after* those, as **three future stages**. The design decisions below were made in a design conversation on **2026-07-04/05**, backed by two `deep-research` passes (agent-runtime/orchestration/auto-eval; and agent-schema/UI). **Nothing here starts until `spec-lifecycle` lands and dogfooding surfaces the need** — this is design-ahead, so Stage-3 decisions aren't made under build pressure.

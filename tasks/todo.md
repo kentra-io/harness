@@ -38,5 +38,8 @@ serialized shared resource (stopped during test windows, orchestrator-only).
 
 ## Open
 
-- [ ] #15 github-mirror: awaiting user — refine gate is the next action
-      (`openspec/changes/015-github-mirror/` untracked in agent-orchestration).
+- [x] 015-github-mirror SHIPPED (PR #31 merged 2026-07-24, issue #15 closed).
+      Remaining open `agent-orchestration` items: #30 (gate-time pytest tmp
+      bug — fix PR in flight) and #32 (consume `milestoned-plan-dag` for
+      execution ordering, follow-on from harness#1, soft-blocked on
+      spec-lifecycle#7).

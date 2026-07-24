@@ -1,5 +1,9 @@
 # Lessons
 
+> **RETIRED 2026-07-19.** This mechanism is no longer maintained — corrections
+> now route to the assistant's auto-memory. Entries below kept as historical
+> reference.
+
 Patterns captured after user corrections, to prevent repeats.
 
 ## Runtime-agnostic is a first-class v1 requirement (2026-06-16)

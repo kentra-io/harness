@@ -1,5 +1,9 @@
 # M6 — Cast prompts + live verification (prompt-design risk)
 
+> **STATUS: SHIPPED 2026-07-09.** Personas built, wired, and live-verified
+> (default Claude Code toolset for all cast agents, user-locked). Kept as the
+> original build spec.
+
 **Module:** `agent-orchestration`, branch `m6-cast-personas` (off M7 tip `3800269`).
 **Deps:** M1 (provider seam) ✅, M2 (claudebox isolation) ✅, M4 (harness) ✅ — all met.
 **Auth invariant (P11):** subscription OAuth only, never `ANTHROPIC_API_KEY`. Live runs cost nothing beyond normal subscription usage inside claudebox.

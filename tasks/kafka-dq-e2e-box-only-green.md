@@ -11,6 +11,8 @@
 > `exit 0` is what let a box-only-green change reach "complete"; that is a harness
 > fix, not fixed here. Also open: the Testcontainers-skill idea
 > (`tasks/retro-idea-testcontainers-skill.md`).
+> kafka-dq declared irrelevant 2026-07-19 (will be rebuilt from scratch);
+> follow-ups here are pattern-reference only.
 
 *Surfaced 2026-07-15 when the user ran `./gradlew clean test` in the worktree
 and it failed — after I had reported the change "9/9 e2e green / complete".

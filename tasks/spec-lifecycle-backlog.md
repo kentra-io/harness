@@ -1,5 +1,10 @@
 # spec-lifecycle backlog — grouped for a dedicated session
 
+> Note (2026-07-24): change 007-yaml-source-of-truth (in flight) supersedes
+> ADR-0001/0002 (OpenSpec-format conformance) referenced below, and its
+> approved scope implements issue #5's Option-2 slugs — re-check items #1 and
+> #3 against the new YAML/JSON-Schema model before picking this up.
+
 **Status: intelligence + design directions, grouped 2026-07-19 for a separate
 agent session.** These are the **planning-leg** remarks collected while
 dogfooding the `spec-lifecycle` primitive (mostly on the kafka-dq testbed).

@@ -1,5 +1,9 @@
 # Spec: `cb run --detach` + launcher adoption
 
+> **STATUS: IMPLEMENTED.** cb run --detach has been the launcher path for
+> every orchestrated run since (see tasks/execute-change-box-input-spec.md,
+> which already calls it implemented). Kept for the diagnosis writeup.
+
 **Status:** ready to implement (diagnosed 2026-07-14, host session). Spans two repos: `claudebox` (the flag) and `agent-orchestration` (the launcher). Small change; TDD per claudebox CLAUDE.md rules.
 
 ## Problem

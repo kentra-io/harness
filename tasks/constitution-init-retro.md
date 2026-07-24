@@ -3,7 +3,9 @@
 **Status: acted on 2026-07-19 — direction approved and planned in
 `adr-sourced-constitution/docs/proposal-v0.2-next-iteration.md` (draft/seal
 phase, multi-category rules, goal-statement preamble, staged interactive init,
-skill fixes). This file remains the evidence record.**
+skill fixes). v0.2 is COMPLETE as of 2026-07-23 (M1 #13, M2 #14, M3 skills #15,
+M4 docs+self-ADRs #16 all merged; plugin 0.2.0). This file remains the
+evidence record.**
 Collected 2026-07-13 from three transcript-summarization passes over the founding
 session (`f3b54a2f`, 2026-07-10) and the stack-decision session (`124424c2`,
 2026-07-10 → 07-13), plus direct experience executing the second reset.
