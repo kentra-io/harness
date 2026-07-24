@@ -54,10 +54,18 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/b
 # launches stay host-side. Installed system-wide (tool venv + managed
 # python under /opt, launcher in /usr/local/bin) so the runtime `agent`
 # user can run what root installed.
+#
+# PINNED to an explicit commit (like LIFECYCLE_REF below). A bare git URL both
+# (a) resolves main HEAD non-deterministically and (b) produces a byte-identical
+# RUN line, so Docker's layer cache reuses the stale install forever on rebuild.
+# Bumping ORCH_REF changes the cache key -> the layer re-runs -> orch refreshes.
+# NOTE: keep ORCH_REF in sync with the harness's agent-orchestration submodule
+# pointer (`git -C agent-orchestration rev-parse HEAD`) whenever the submodule bumps.
+ARG ORCH_REF=6c00a537d6dbfcbb16dbe2093e5dcd7458adbfb6
 RUN env UV_PYTHON_INSTALL_DIR=/opt/uv/python \
         UV_TOOL_DIR=/opt/uv/tools \
         UV_TOOL_BIN_DIR=/usr/local/bin \
-    uv tool install --python 3.12 git+https://github.com/kentra-io/agent-orchestration \
+    uv tool install --reinstall --python 3.12 "git+https://github.com/kentra-io/agent-orchestration@${ORCH_REF}" \
  && orch --help >/dev/null
 
 # --- kentra SDD primitives on PATH ---
