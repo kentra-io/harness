@@ -73,3 +73,27 @@ realization, no refine amendment); no module-level constitution.
 - Factory.ai comparison (this session): Factory has no machine-checkable
   per-milestone verification, no structural checklist, no DAG — the required
   contract + checkbox integrity is the differentiator, not a reinvention.
+
+## Out-of-scope consumer follow-ons (M6)
+
+Change 001 ships the primitive (`milestoned-plan-dag`, schema + CLI + skills)
+and wires it into the harness as a submodule per ADR-0001. It deliberately
+does **not** rework either downstream consumer named above — that work is
+scoped out to two separate future changes:
+
+1. **spec-lifecycle plan-stage rework** — `spec-lifecycle`'s plan/tasks stage
+   currently owns its own ad-hoc plan handling. It should instead shell out to
+   `milestoned-plan-dag validate` (and optionally `resolve`) so plans authored
+   during the plan gate are checked against the published schema + DAG rules
+   (cycles, dangling edges, duplicate slug/number, contract shape) rather than
+   spec-lifecycle re-implementing that validation. Tracked as a separate
+   future change against `spec-lifecycle`.
+2. **agent-orchestration execution-ordering rework** — `agent-orchestration`'s
+   executor currently derives milestone execution order itself. It should
+   instead read the `milestoned-plan-dag resolve` YAML projection — the
+   authoritative `depends_on` edges and the deterministic topological `order`
+   — to drive execution ordering, instead of re-deriving order from the raw
+   plan. Tracked as a separate future change against `agent-orchestration`.
+
+Both are explicitly out of scope for change 001; this change stops at
+registering the primitive and documenting the contract it exposes.

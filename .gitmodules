@@ -18,3 +18,7 @@
 	path = kentra-skills
 	url = git@github.com:kentra-io/kentra-skills.git
 	branch = main
+[submodule "milestoned-plan-dag"]
+	path = milestoned-plan-dag
+	url = git@github.com:kentra-io/milestoned-plan-dag.git
+	branch = main
