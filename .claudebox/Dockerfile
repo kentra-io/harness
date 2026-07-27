@@ -61,7 +61,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/b
 # Bumping ORCH_REF changes the cache key -> the layer re-runs -> orch refreshes.
 # NOTE: keep ORCH_REF in sync with the harness's agent-orchestration submodule
 # pointer (`git -C agent-orchestration rev-parse HEAD`) whenever the submodule bumps.
-ARG ORCH_REF=f001e873d0e2a656801d3986ae794e4c2dfd5861
+ARG ORCH_REF=a907bdf0f6a5a663531b04f9df4b4707692afd4e
 RUN env UV_PYTHON_INSTALL_DIR=/opt/uv/python \
         UV_TOOL_DIR=/opt/uv/tools \
         UV_TOOL_BIN_DIR=/usr/local/bin \
