@@ -93,7 +93,7 @@ RUN set -eux; \
 # so build from a pinned commit with the Go toolchain installed above.
 # NOTE: keep LIFECYCLE_REF in sync with the harness's spec-lifecycle submodule
 # pointer (`git -C spec-lifecycle rev-parse HEAD`) whenever the submodule bumps.
-ARG LIFECYCLE_REF=60abf1d41583a81717b270a93a1887c73d84e8b1
+ARG LIFECYCLE_REF=515c84a4a1fe613a280d11b77e0e0cc4acb98ff8
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/spec-lifecycle /tmp/spec-lifecycle; \
     cd /tmp/spec-lifecycle; \
