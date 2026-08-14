@@ -22,7 +22,8 @@ Conventions for primitives: framework-neutral core, agent-agnostic skills, thin 
 ## Current state pointers
 
 - Methodology map / umbrella: [`kentra-sdlc.md`](./kentra-sdlc.md) (the intent pipeline, primitive registry, and the two deferred concerns — TODO capture + documentation).
-- Resumable design-session state: `tasks/retro-archive/planning-module-handoff.md` (archived; planning module — now **shipped**) and [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md) (**read this first when picking up Stage-3 orchestration/runtime/agent work**).
+- Resumable design-session state: `tasks/retro-archive/planning-module-handoff.md` (archived; planning module — now **shipped**) and [`tasks/orchestration-runtime-handoff.md`](./tasks/orchestration-runtime-handoff.md). The handoff's **Stage-3 content is spent** — `agent-orchestration` shipped; for live Stage-3 work read that repo's own open issues and constitution instead. The handoff remains the **sole home for Stage-4 (LiteLLM + Langfuse) and Stage-5 (A/B experiment controller) designs** and the `agent-definition` skill-overlay/provisioning decisions — read it when picking those up.
+- Current work + open-issue index across all repos: [`tasks/todo.md`](./tasks/todo.md).
 - Latest framework research: `references/sdd-framework-research-2026-07.md`.
 - Doc status (2026-07-06 reconciliation): `README.md` rewritten to current architecture. `planning.md` / `mvp-plan.md` carry **read-first STATUS banners** — their in-body Spec-Kit/OpenSpec-runtime text is historical and superseded by those banners (Option B: pure-Go, OpenSpec = format not runtime). `workflow-orchestration-analysis.md` is superseded-in-part (Beads/nesting) — banner at top.
 

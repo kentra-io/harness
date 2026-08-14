@@ -207,10 +207,29 @@ parked `kentra-sdlc` deferred concerns (TODO capture + documentation).
   the stored-ID/scenario-ops half of #3 need real brainstorms; #4 is the
   largest and depends on #3's anchor decision.
 
-## Source notes (all in `harness/tasks/`)
-- `plan-structured-contracts-gap.md`
-- `lifecycle-refine-retro.md`
-- `constitution-init-retro.md` (systemic-pattern sibling)
-- `lifecycle-identifiers-note.md`
-- `traceability-change-to-plan-to-conversation.md`
-- Related orchestration issue: `kentra-io/agent-orchestration#9` (milestone-commit trailer).
+## Source notes
+
+The 2026-08-11 cleanup sweep verified each source doc against shipped code and
+retired the ones whose content had either shipped or been fully absorbed here.
+This file is now the single home for §2 and §4 — neither is filed as an issue in
+any repo.
+
+- `lifecycle-refine-retro.md` — **still in `harness/tasks/`**, the live evidence
+  for §2 (`spec-lifecycle/skills/lifecycle-refine/SKILL.md` still contains zero
+  elicitation language).
+- `constitution-init-retro.md` (systemic-pattern sibling) — moved to
+  `harness/tasks/retro-archive/`; all six of its recommendations shipped in
+  `adr-sourced-constitution` v0.2.
+- `plan-structured-contracts-gap.md` — deleted, resolved. `lifecycle init` is
+  idempotent with a drift policy (`cmd/lifecycle/init.go:52-58`), and the
+  `tasks.md` template half went moot with the 007 YAML flip; §1's residual
+  quality concern is owned by `tasks/lifecycle-skills-rewrite-design.md`.
+- `lifecycle-identifiers-note.md` — deleted, superseded by
+  `kentra-io/spec-lifecycle#5`, which is a verbatim superset. §3's slug half
+  shipped in 007; the stored-ID and scenario-ops halves remain open there.
+- `traceability-change-to-plan-to-conversation.md` — deleted, fully restated by
+  §4 above (including the raw-vs-distilled open question).
+- Related orchestration issue: `kentra-io/agent-orchestration#9` (milestone-commit
+  trailer) — **closed without a trailer**. `orchestration/launch/milestone_commit.py:103`
+  emits `M<n>: <title> (<change_id>)` as a subject line only; no `Change-Id:` or
+  `Session:` trailer exists, so §4's commit-side anchor is still unbuilt.

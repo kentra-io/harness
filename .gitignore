@@ -13,8 +13,10 @@ claudebox/
 # kafka-dq M9 dogfood testbed (its own nested git repo — not a submodule)
 kafka-dq/
 
-# kentra-skills scratch working copy (own git repo; canonical home = kentra-io/kentra-skills)
-.claudebox/tmp/kentra-skills/
+# claudebox scratch: bind-mounted, host-visible working area — never committed
+# (supersedes the narrower .claudebox/tmp/kentra-skills/ entry; canonical home
+# for that working copy is kentra-io/kentra-skills)
+.claudebox/tmp/
 
 # Claude Code per-machine local settings (never shared)
 .claude/settings.local.json
