@@ -93,7 +93,7 @@ RUN set -eux; \
 # so build from a pinned commit with the Go toolchain installed above.
 # NOTE: keep LIFECYCLE_REF in sync with the harness's spec-lifecycle submodule
 # pointer (`git -C spec-lifecycle rev-parse HEAD`) whenever the submodule bumps.
-ARG LIFECYCLE_REF=515c84a4a1fe613a280d11b77e0e0cc4acb98ff8
+ARG LIFECYCLE_REF=1d76b00ea346f7c7b4d01e4cba7ef43e35f1df1b
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/spec-lifecycle /tmp/spec-lifecycle; \
     cd /tmp/spec-lifecycle; \
@@ -101,5 +101,20 @@ RUN set -eux; \
     go build -trimpath -o /usr/local/bin/lifecycle ./cmd/lifecycle; \
     cd /; rm -rf /tmp/spec-lifecycle; \
     lifecycle --version
+
+# milestoned-plan-dag: BUILT FROM SOURCE — it publishes no release and no cask.
+# `lifecycle` shells out to this binary for the plan-stage gate
+# (`lifecycle validate --stage plan`) and the archive step-completion gate, and
+# warns at `lifecycle init` when it is absent, so the box needs both or neither.
+# NOTE: keep MPD_REF in sync with the harness's milestoned-plan-dag submodule
+# pointer (`git -C milestoned-plan-dag rev-parse HEAD`) whenever it bumps.
+ARG MPD_REF=e04aef99af1363e9bf0fc802c807c47ebc56fdc9
+RUN set -eux; \
+    git clone --filter=blob:none --quiet https://github.com/kentra-io/milestoned-plan-dag /tmp/milestoned-plan-dag; \
+    cd /tmp/milestoned-plan-dag; \
+    git checkout --quiet "$MPD_REF"; \
+    go build -trimpath -o /usr/local/bin/milestoned-plan-dag ./cmd/milestoned-plan-dag; \
+    cd /; rm -rf /tmp/milestoned-plan-dag; \
+    milestoned-plan-dag --help >/dev/null
 
 USER agent
