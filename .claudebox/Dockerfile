@@ -93,7 +93,7 @@ RUN set -eux; \
 # the box can dogfood unreleased work, and it is stricter than a version pin.
 # NOTE: keep LIFECYCLE_REF in sync with the harness's spec-lifecycle submodule
 # pointer (`git -C spec-lifecycle rev-parse HEAD`) whenever the submodule bumps.
-ARG LIFECYCLE_REF=10ad5e20623a18b9ca55825d24ec7d2069f349ab
+ARG LIFECYCLE_REF=756309ec522d1c4f6a83828d25030e5f40578dd3
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/spec-lifecycle /tmp/spec-lifecycle; \
     cd /tmp/spec-lifecycle; \

@@ -12,12 +12,21 @@ repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
 ### In flight
 
 - **Lifecycle skills rewrite** — design `tasks/lifecycle-skills-rewrite-design.md`,
-  plan `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`. **Half executed:**
-  Tasks 1–11 landed on branch `skills-rewrite-pilot` in both `milestoned-plan-dag`
-  (`e74457a`, PR #2 open) and `spec-lifecycle` (`9007235`, no PR yet). Tasks 12–16
-  are not done — `spec-lifecycle/skills/` still holds 6 skills with no
-  `lifecycle-plan`, `evals/` does not exist, and `internal/validate/doc.go` is
-  uncommitted on the pilot branch.
+  plan `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`. Pilot **landed**: PR #2
+  (`milestoned-plan-dag`) and PR #9 (`spec-lifecycle`) both merged; `lifecycle-plan`
+  and `evals/` now exist. Remaining scope, if any, should be re-derived from the
+  plan rather than from this entry.
+
+### Needs the org owner (2026-08-17)
+
+- **`HOMEBREW_TAP_TOKEN` does not cover `milestoned-plan-dag`.** Its first release
+  (v0.1.0) published the GitHub Release fine but failed the cask push with
+  `401 Bad credentials` on `kentra-io/homebrew-tap`; `spec-lifecycle` v0.2.0,
+  released minutes later, pushed its cask successfully. So the org secret is valid
+  but scoped to selected repositories, and the new repo is not on the list. The
+  v0.1.0 cask was published by hand to unblock consumers — **the next
+  `milestoned-plan-dag` release will fail the same way** until the repo is added to
+  the secret's allowlist (needs org-admin rights; not inspectable without them).
 
 ### Open issues by repo (as of 2026-08-11)
 
