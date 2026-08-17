@@ -87,13 +87,13 @@ RUN set -eux; \
     "$bin" --version
 
 # lifecycle (spec-lifecycle CLI): BUILT FROM SOURCE, not a release binary.
-# The only published release (v0.1.0) predates the `lifecycle apply` command
-# (added post-tag in #4), which agent-orchestration's `orch launch`/`validate`
-# require (`lifecycle apply <change> --format json`). No release carries it yet,
-# so build from a pinned commit with the Go toolchain installed above.
+# A current release now exists (v0.2.0, with a `lifecycle` cask in
+# kentra-io/homebrew-tap) — consumers should install that. The box stays on a
+# from-source build DELIBERATELY: a commit pin tracks main between releases, so
+# the box can dogfood unreleased work, and it is stricter than a version pin.
 # NOTE: keep LIFECYCLE_REF in sync with the harness's spec-lifecycle submodule
 # pointer (`git -C spec-lifecycle rev-parse HEAD`) whenever the submodule bumps.
-ARG LIFECYCLE_REF=1d76b00ea346f7c7b4d01e4cba7ef43e35f1df1b
+ARG LIFECYCLE_REF=10ad5e20623a18b9ca55825d24ec7d2069f349ab
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/spec-lifecycle /tmp/spec-lifecycle; \
     cd /tmp/spec-lifecycle; \
@@ -102,19 +102,22 @@ RUN set -eux; \
     cd /; rm -rf /tmp/spec-lifecycle; \
     lifecycle --version
 
-# milestoned-plan-dag: BUILT FROM SOURCE — it publishes no release and no cask.
+# milestoned-plan-dag: BUILT FROM SOURCE, for the same reason as `lifecycle`
+# above (commit pin > version pin for a dogfooding box). It now publishes
+# releases and a cask too, so consumers outside the box install it with
+# `brew install kentra-io/tap/milestoned-plan-dag`.
 # `lifecycle` shells out to this binary for the plan-stage gate
 # (`lifecycle validate --stage plan`) and the archive step-completion gate, and
 # warns at `lifecycle init` when it is absent, so the box needs both or neither.
 # NOTE: keep MPD_REF in sync with the harness's milestoned-plan-dag submodule
 # pointer (`git -C milestoned-plan-dag rev-parse HEAD`) whenever it bumps.
-ARG MPD_REF=e04aef99af1363e9bf0fc802c807c47ebc56fdc9
+ARG MPD_REF=21c020e4f0e9591668a5db8ecc909d8489dc6f03
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/milestoned-plan-dag /tmp/milestoned-plan-dag; \
     cd /tmp/milestoned-plan-dag; \
     git checkout --quiet "$MPD_REF"; \
     go build -trimpath -o /usr/local/bin/milestoned-plan-dag ./cmd/milestoned-plan-dag; \
     cd /; rm -rf /tmp/milestoned-plan-dag; \
-    milestoned-plan-dag --help >/dev/null
+    milestoned-plan-dag --version
 
 USER agent
