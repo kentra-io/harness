@@ -17,16 +17,22 @@ repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
   and `evals/` now exist. Remaining scope, if any, should be re-derived from the
   plan rather than from this entry.
 
-### Needs the org owner (2026-08-17)
+### Resolved 2026-08-17
 
-- **`HOMEBREW_TAP_TOKEN` does not cover `milestoned-plan-dag`.** Its first release
-  (v0.1.0) published the GitHub Release fine but failed the cask push with
-  `401 Bad credentials` on `kentra-io/homebrew-tap`; `spec-lifecycle` v0.2.0,
-  released minutes later, pushed its cask successfully. So the org secret is valid
-  but scoped to selected repositories, and the new repo is not on the list. The
-  v0.1.0 cask was published by hand to unblock consumers — **the next
-  `milestoned-plan-dag` release will fail the same way** until the repo is added to
-  the secret's allowlist (needs org-admin rights; not inspectable without them).
+- **`HOMEBREW_TAP_TOKEN` now covers `milestoned-plan-dag`.** Its first v0.1.0
+  release published the GitHub Release but failed the cask push with
+  `401 Bad credentials` — the org secret is scoped to selected repositories and
+  the new repo was not on the list. The owner granted access; v0.1.0 was then
+  torn down and re-cut per `docs/releasing.md`, and the release succeeded
+  end-to-end with the cask pushed by `goreleaserbot`. Verified by
+  `brew reinstall`, which validates the archive checksums on download.
+
+  Worth knowing for next time: the re-cut produced **different archive
+  checksums** for the same commit. `mod_timestamp` pins the binaries' mtimes but
+  not those of the extra files bundled into the archives (`LICENSE`, `README.md`,
+  `schema/*.json`), so the tarballs are not bit-reproducible across runs. A
+  hand-written cask therefore goes stale the moment a release is re-cut — always
+  let the pipeline regenerate it rather than leaving a hand-made one in place.
 
 ### Open issues by repo (as of 2026-08-11)
 
