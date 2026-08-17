@@ -71,7 +71,7 @@ RUN env UV_PYTHON_INSTALL_DIR=/opt/uv/python \
 # --- kentra SDD primitives on PATH ---
 # constitution: pinned static release binary, checksum-verified (see
 # spec-lifecycle/docs/releasing.md). CGO-free single binary — no Go build.
-ARG CONSTITUTION_VERSION=0.2.0
+ARG CONSTITUTION_VERSION=0.3.0
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in amd64|arm64) ;; *) echo "unsupported arch: $arch" >&2; exit 1 ;; esac; \
