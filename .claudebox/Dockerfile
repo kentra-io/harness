@@ -111,7 +111,7 @@ RUN set -eux; \
 # warns at `lifecycle init` when it is absent, so the box needs both or neither.
 # NOTE: keep MPD_REF in sync with the harness's milestoned-plan-dag submodule
 # pointer (`git -C milestoned-plan-dag rev-parse HEAD`) whenever it bumps.
-ARG MPD_REF=512c5e6419c280571ef9e50e51c2393745b2e968
+ARG MPD_REF=5defae141c0ed977da7681ce3f3cf309c317d54e
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/milestoned-plan-dag /tmp/milestoned-plan-dag; \
     cd /tmp/milestoned-plan-dag; \
