@@ -31,6 +31,10 @@ Conventions for primitives: framework-neutral core, agent-agnostic skills, thin 
 
 - **SDD** in this repo = **spec-driven development**. (Obra Superpowers uses "SDD" for *subagent*-driven development — different thing, don't conflate.)
 
-<!-- BEGIN spec-lifecycle v1 (managed — do not edit by hand; `lifecycle init` updates it) -->
-This project uses `lifecycle` (spec-lifecycle) for staged, gated planning — see `openspec/`. Run `lifecycle status` for gate state; approve gates only via `lifecycle approve`, never by hand-editing `approval-state.json`.
-<!-- END spec-lifecycle v1 -->
+## This repo is not itself governed or gated
+
+The harness is the wrapper/design repo. It does **not** run `lifecycle` or
+`constitution` on itself — there is no `openspec/` tree, no ADR log, and no
+installed stage or governance skills. Both primitives are still built, shipped,
+and consumed here as submodules; they are simply not applied to this repo.
+Work on them happens in their own repos, which are governed.
