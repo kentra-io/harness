@@ -34,37 +34,101 @@ repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
   hand-written cask therefore goes stale the moment a release is re-cut — always
   let the pipeline regenerate it rather than leaving a hand-made one in place.
 
-### Open issues by repo (as of 2026-08-11)
+### Open issues by repo (as of 2026-09-10)
 
+- `spec-lifecycle` — **#12 (`lifecycle-refine` elicitation-first rewrite)**,
+  **#13 (`lifecycle-design` elicitation-first rewrite)**, **#14 (constitution
+  handling across the stage skills)**, #11 (no way to suppress the AGENTS.md
+  pointer block), #6 (remove OpenSpec references; ~half done), #5 (stable
+  identifiers; slug half shipped, stored-ID and scenario-ops halves open).
 - `agent-orchestration` — #32 (consume `milestoned-plan-dag` for execution
-  ordering; its spec-lifecycle#7 blocker cleared, now actionable), #42 (empty
-  `contract.paths` → `git add -A`; **widened** — the diff-confinement gate is
-  never wired at all), #43 (milestone contracts never run the linter), #47
-  (change-level L2 healthcheck is the always-pass default on every production
-  run), #48 (agent box gets empty `skills/`/`plugins/` — `kentra-skills` never
-  seeded).
-- `spec-lifecycle` — #5 (stable identifiers; slug half shipped, stored-ID and
-  scenario-ops halves open), #6 (remove OpenSpec references; ~half done).
-- `harness` — #2 (stale box bind mount; box reuse lacks a mount-liveness check).
+  ordering), #42 (empty `contract.paths` → `git add -A`; the diff-confinement
+  gate is never wired at all), #43 (milestone contracts never run the linter),
+  #46 (`orch daemon start` should warn when `KENTRA_BOT_GH_TOKEN` is absent),
+  #47 (change-level L2 healthcheck is the always-pass default on every
+  production run), #48 (agent box gets empty `skills/`/`plugins/` —
+  `kentra-skills` never seeded).
+- `harness` — **#4 (domain glossary + grill-with-docs)**, **#5 (full track
+  record: session + plan + implementation, benchmarkable)**, #2 (stale box bind
+  mount; box reuse lacks a mount-liveness check).
+- `adr-sourced-constitution` — #31 (`adr edit --body-file` can silently drop
+  every rule in an ADR), #29 (draft phase should not require `--source` on
+  `adr new`), #28 (`constitution.md`'s introduction is a hardcoded Go constant
+  describing the tool, not the project), #27 (`config set` cannot repair a
+  config that fails validation).
+- `milestoned-plan-dag` — **#5 (plan provenance: pointer to the planning
+  session)**, #1 (per-milestone `checkpoint: true` + plan-level `healthcheck`;
+  the natural fix vehicle for agent-orchestration#47).
 - `claudebox` — #11 (`cb login` still provisions credential files against an
   `env_auth` box).
-- `milestoned-plan-dag` — #1 (per-milestone `checkpoint: true` + plan-level
-  `healthcheck`; the natural fix vehicle for agent-orchestration#47).
+- `kentra-skills`, `kentra-agentic-plugins` — none open.
+
+Bold = filed 2026-09-10 from the kafka-dq ideation pass (see below).
+
+### Ideation filed 2026-09-10 (kafka-dq session)
+
+Four concepts were captured as issues; none is refined, and no scope is
+approved. They form one cluster — the **planning leg's elicitation and its
+record**:
+
+- **Elicit before formalizing.** spec-lifecycle#12/#13 rewrite `refine` and
+  `design` as collaborative, question-driven stages on `/grill-me` principles.
+  Upstream pinned 2026-09-25: `mattpocock/skills` (MIT, `c55ee46`) — `grill-me`
+  and `grill-with-docs` are trampolines over `grilling` (design tree, frontier,
+  batched rounds) and `domain-modeling` (glossary + ADRs written during the
+  interview); both transcribed into the issues.
+  Continuation of the 2026-08-11 skills-rewrite pilot (which covered
+  `/lifecycle-plan` only) *plus* the elicitation phase the pilot did not
+  design.
+- **Constitution in the loop.** spec-lifecycle#14 — consult it (via
+  `constitution-gov`'s force-inline rather than a pointer), gate on it, and
+  route ADR proposals, consistently across every stage skill. **Decided
+  2026-09-25:** the two primitives are an intended pairing, and a repo with no
+  `constitution/` is simply ignored — no warning, no degraded-mode branch.
+- **Glossary + grill-with-docs.** harness#4 — ubiquitous language as a
+  first-class artifact; placement across the primitives is undecided.
+- **Track record + benchmarking.** harness#5 + milestoned-plan-dag#5 — attach
+  the planning session to the plan so session + plan + implementation is one
+  unit, making the *planning* leg benchmarkable alongside the execution leg
+  Stage 5 already covers.
 
 ### Unfiled, tracked only in this directory
 
-- **Refine elicitation** and **change → plan → conversation traceability** —
-  `tasks/spec-lifecycle-backlog.md` §2 and §4. Not filed as issues anywhere.
-- **`.claudebox/tmp/` convention** — `tasks/claudebox-tmp-convention.md`.
-  Unimplemented: no rule in `AGENTS.md`/`CLAUDE.md`/`constitution.md`, no hook,
-  and `.gitignore:17` ignores only `.claudebox/tmp/kentra-skills/` so the
-  directory's scratch shows up as untracked (two files are even tracked).
+- **`.claudebox/tmp/` convention** — `tasks/claudebox-tmp-convention.md`. The
+  gitignore half shipped (harness `d4b9e76`); no rule in
+  `AGENTS.md`/`CLAUDE.md` and no hook.
 - **Stage 4 / Stage 5 designs** (LiteLLM + Langfuse; A/B experiment controller)
   and the `agent-definition` decisions — sole home is
-  `tasks/orchestration-runtime-handoff.md`.
+  `tasks/orchestration-runtime-handoff.md`. harness#5 is the substrate half of
+  Stage 5, now filed.
 - **`openspec/` directory rename** — `spec-lifecycle/README.md:5` points at
-  spec-lifecycle#6 as the tracker, but #6's body explicitly excludes the rename.
-  Nothing tracks it.
+  spec-lifecycle#6 as the tracker, but #6's body explicitly excludes the
+  rename. Nothing tracks it.
+Previously listed here and now filed: **refine elicitation** (→
+spec-lifecycle#12/#13) and **change → plan → conversation traceability** (→
+harness#5, milestoned-plan-dag#5).
+
+### Retired docs (2026-09-25) — where their content went
+
+The planning-leg backlog is fully dispersed into issues, so both docs were
+deleted rather than left to rot. Recover either from git history if needed.
+
+- `tasks/lifecycle-refine-retro.md` → **spec-lifecycle#12** (and #13). The
+  kafka-dq dogfood finding — refine converges before it elicits — is restated
+  there in full. Note two shipped-history docs in `adr-sourced-constitution`
+  (`docs/proposal-v0.2-next-iteration.md`, `docs/plans/2026-07-23-…`) cite this
+  path as provenance; those citations now point here.
+- `tasks/spec-lifecycle-backlog.md` → §2 to spec-lifecycle#12/#13, §3 to
+  spec-lifecycle#5 (a verbatim superset, assessment included), §4 to harness#5
+  + milestoned-plan-dag#5. **§1 (structured contracts) needed no issue**: by
+  the doc's own source notes both halves are resolved — `lifecycle init` is
+  idempotent with a drift policy (`cmd/lifecycle/init.go:52-58`), the
+  `tasks.md` template half went moot with the 007 YAML flip, and the residual
+  quality concern is owned by `tasks/lifecycle-skills-rewrite-design.md`.
+  Its one live fact — `agent-orchestration#9` shipped **without** a commit
+  trailer (`orchestration/launch/milestone_commit.py` `build_message()` emits a
+  subject line only; no `Change-Id:`/`Session:` anywhere) — was moved to
+  harness#5 as a comment.
 
 ## Review — tasks/ cleanup (2026-08-11)
 
