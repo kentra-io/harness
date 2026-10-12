@@ -1,6 +1,6 @@
 # Spec-Kit Ecosystem Research — SDD Tools vs. Our Target System
 
-*Generated: 2026-06-16 via the `/deep-research` workflow (6 search angles, 23 sources fetched, 114 claims extracted, top 25 adversarially verified → 23 confirmed / 2 refuted, ~106 subagent calls). Companion to [library-analysis.md](./library-analysis.md) and [../planning.md](../planning.md).*
+*Generated: 2026-06-16 via the `/deep-research` workflow (6 search angles, 23 sources fetched, 114 claims extracted, top 25 adversarially verified → 23 confirmed / 2 refuted, ~106 subagent calls). Companion to [library-analysis.md](./library-analysis.md) and ../planning.md (deleted 2026-10-11; see git history).*
 
 > **Question.** Find Spec-Kit (github/spec-kit) extensions, forks, plugins, or alternative spec-driven-development (SDD) tools that more closely match our target planning system, scored against its **four defining features**:
 > 1. **Issue-as-folder, separated staged artifacts** — each issue → one version-controlled folder with distinct functional + non-functional requirements, a separate technical-design doc, and a milestone plan carrying validation contracts; fresh-context staged handoffs with human approval gates.

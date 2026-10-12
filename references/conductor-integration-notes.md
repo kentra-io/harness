@@ -1,6 +1,6 @@
 # Conductor Integration Notes (implementation reference)
 
-*Generated: 2026-06-16. Source-level reconnaissance of [conductor](./conductor) (`references/conductor`) for building the harness on top of it. Companion to [../planning.md](../planning.md) (§0, §12a, §13) and [../fabro-vs-conductor-evaluation.md](../fabro-vs-conductor-evaluation.md). All file paths are under `references/conductor/src/conductor/` unless noted; cited line numbers are approximate and may drift across Conductor versions — re-verify against the pinned version.*
+*Generated: 2026-06-16. Source-level reconnaissance of [conductor](./conductor) (`references/conductor`) for building the harness on top of it. Companion to ../planning.md (deleted 2026-10-11; see git history) (§0, §12a, §13) and ../fabro-vs-conductor-evaluation.md (deleted 2026-10-11; see git history). All file paths are under `references/conductor/src/conductor/` unless noted; cited line numbers are approximate and may drift across Conductor versions — re-verify against the pinned version.*
 
 > **Why this doc exists.** `planning.md` records the *design/approach*; this records the *granular build recon* so we don't re-explore the source. Three build pieces: (1) a `ClaudeboxProvider`, (2) the multi-run dashboard aggregator, (3) `feature.yaml`/`bug.yaml` lifecycles. Everything here is **additive** to Conductor (no core edits).
 

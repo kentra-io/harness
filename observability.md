@@ -1,8 +1,8 @@
 # Observability & LLM-Proxy Plane — Decision Record
 
-*Generated: 2026-06-16 | **Revised & DECIDED: 2026-06-17.** Status: **DECIDED — LiteLLM (gateway) + Langfuse (observability / eval / persistence)**, with Claude Code native OpenTelemetry on Claude nodes. This settles [planning.md §12a](./planning.md) (the observability plane) and resolves [§15 open decision #8](./planning.md). Companion to [planning.md](./planning.md), [fabro-vs-conductor-evaluation.md](./fabro-vs-conductor-evaluation.md), [references/technologies.md](./references/technologies.md).*
+*Generated: 2026-06-16 | **Revised & DECIDED: 2026-06-17.** Status: **DECIDED — LiteLLM (gateway) + Langfuse (observability / eval / persistence)**, with Claude Code native OpenTelemetry on Claude nodes. This settles planning.md §12a (deleted 2026-10-11; see git history) (the observability plane) and resolves §15 open decision #8 (deleted 2026-10-11; see git history). Companion to planning.md (deleted 2026-10-11; see git history), fabro-vs-conductor-evaluation.md (deleted 2026-10-11; see git history), [references/technologies.md](./references/technologies.md).*
 
-> **What this document is.** The decision record for the harness's **observability / LLM-proxy plane** — the engine-agnostic layer *beneath* the runtime ([planning.md §0.2](./planning.md)) that captures cost/tokens/traces, allocates cost per issue, and supports evaluating different harness configurations. It records the chosen stack, the alternatives evaluated and **why they were rejected**, what each stated goal maps to, and the build-time items to verify.
+> **What this document is.** The decision record for the harness's **observability / LLM-proxy plane** — the engine-agnostic layer *beneath* the runtime (planning.md §0.2 (deleted 2026-10-11; see git history)) that captures cost/tokens/traces, allocates cost per issue, and supports evaluating different harness configurations. It records the chosen stack, the alternatives evaluated and **why they were rejected**, what each stated goal maps to, and the build-time items to verify.
 
 ---
 
@@ -11,10 +11,10 @@
 **Adopt `LiteLLM` (pinned) as the gateway + `Langfuse` (self-hosted) as the observability / eval / persistence layer.** Claude Code's native OpenTelemetry (`CLAUDE_CODE_ENABLE_TELEMETRY=1`) ships span-level depth from Claude nodes into the same backend. Every model call routes through LiteLLM via `ANTHROPIC_BASE_URL`; LiteLLM's `langfuse_otel` callback forwards traces to Langfuse.
 
 **Why this stack:**
-- **LiteLLM** — mature pure gateway: 100+ providers (fits the runtime-agnostic v1 requirement, [§0.4](./planning.md)), native virtual keys / budgets / access control, native Anthropic `/v1/messages` passthrough (so Claude Code points at it unmodified), and rich per-request cost telemetry (`gen_ai.cost.*` attributes + token-usage histograms) exported over vendor-neutral OTel.
+- **LiteLLM** — mature pure gateway: 100+ providers (fits the runtime-agnostic v1 requirement, §0.4 (deleted 2026-10-11; see git history)), native virtual keys / budgets / access control, native Anthropic `/v1/messages` passthrough (so Claude Code points at it unmodified), and rich per-request cost telemetry (`gen_ai.cost.*` attributes + token-usage histograms) exported over vendor-neutral OTel.
 - **Langfuse** — the deepest open-source observability + **eval** layer: OTLP backend, native LiteLLM callback, sessions/traces hierarchy suited to multi-step agentic runs, and a mature eval framework (LLM-as-judge + code scorers + human annotation + **datasets + experiments**) — which is exactly the "eval different configs / continuous eval" half of the goal set. MIT-licensed, self-hostable, and now **backed by ClickHouse** (acquired Langfuse 2026-01-16) with a public commitment to keep it MIT/OSS/self-hostable; actively developed (releasing multiple times/week).
 
-**Two goals remain custom builds regardless of tool** (no product offers them natively): **cost-mapped-to-issues** (cheap — inject the issue-ID tag on every call, already designed in [§4](./planning.md); the store does the rollup) and **"rough complexity estimation"** (a bespoke analysis over persisted traces — tokens/turns/retries/escalations per issue).
+**Two goals remain custom builds regardless of tool** (no product offers them natively): **cost-mapped-to-issues** (cheap — inject the issue-ID tag on every call, already designed in §4 (deleted 2026-10-11; see git history); the store does the rollup) and **"rough complexity estimation"** (a bespoke analysis over persisted traces — tokens/turns/retries/escalations per issue).
 
 ---
 
@@ -22,10 +22,10 @@
 
 | Constraint (source) | Consequence |
 |---|---|
-| **Agent node = a full Claude Code session** pointed at the gateway via `ANTHROPIC_BASE_URL` ([D2, §12a](./planning.md)) | Gateway must accept the **Anthropic Messages format** unmodified. LiteLLM does (native `/v1/messages`). *This is what eliminated Helicone's gateway (§3).* |
-| **The engine never sees model calls** — telemetry lives *below* the runtime ([§0.2](./planning.md)) | The plane is independent of Conductor; swappable later without touching the engine. |
-| **Runtime-agnostic is first-class v1** ([§0.4](./planning.md); [lessons.md](./tasks/lessons.md)) | Favours LiteLLM's 100+ providers over any ~20-provider gateway. |
-| **Every run is tagged with its issue number** ([§4](./planning.md)) | Cost-per-issue = inject issue ID as metadata/tag on every call; works with any store that supports custom dimensions. Langfuse `sessionId`/tags/metadata cover it and tie cost into the trace tree. |
+| **Agent node = a full Claude Code session** pointed at the gateway via `ANTHROPIC_BASE_URL` (D2, §12a (deleted 2026-10-11; see git history)) | Gateway must accept the **Anthropic Messages format** unmodified. LiteLLM does (native `/v1/messages`). *This is what eliminated Helicone's gateway (§3).* |
+| **The engine never sees model calls** — telemetry lives *below* the runtime (§0.2 (deleted 2026-10-11; see git history)) | The plane is independent of Conductor; swappable later without touching the engine. |
+| **Runtime-agnostic is first-class v1** (§0.4 (deleted 2026-10-11; see git history); [lessons.md](./tasks/lessons.md)) | Favours LiteLLM's 100+ providers over any ~20-provider gateway. |
+| **Every run is tagged with its issue number** (§4 (deleted 2026-10-11; see git history)) | Cost-per-issue = inject issue ID as metadata/tag on every call; works with any store that supports custom dimensions. Langfuse `sessionId`/tags/metadata cover it and tie cost into the trace tree. |
 | **Local-first development is the priority** (user, 2026-06-17) | Weighs *against* cloud-SaaS/enterprise-first tools. Reinforces rejecting Helicone; accepted tradeoff for Langfuse is that it's still a multi-service stack (see §4). |
 
 **Framing point that drives the eval half:** the harness's "continuous learning" is **eval-of-configurations** (which workflow/skill/model combo produces better outcomes per issue), **not model fine-tuning**. This is Langfuse's shape (datasets + experiments + eval-over-traces), and was the deciding reason a fine-tuning-oriented all-in-one was unnecessary.
@@ -55,7 +55,7 @@
             for span-level depth on Claude nodes.
 ```
 
-**Join by issue:** every run is tagged (LiteLLM metadata / `X-Claude-Code-Session-Id` / OTel resource attr = issue number), so cost/traces are queryable per issue ([§4, §12a](./planning.md)).
+**Join by issue:** every run is tagged (LiteLLM metadata / `X-Claude-Code-Session-Id` / OTel resource attr = issue number), so cost/traces are queryable per issue (§4, §12a (deleted 2026-10-11; see git history)).
 
 ---
 
@@ -91,7 +91,7 @@ The decision is made; these are the things to confirm during the build, not bloc
 | Stated goal | Mechanism | Status |
 |---|---|---|
 | **Token-spend tracking** | LiteLLM `gen_ai.*` OTel telemetry → Langfuse store | ✅ off-the-shelf |
-| **Cost allocation to issues/tasks** | Inject issue-ID tag/`sessionId` per call ([§4](./planning.md)) → Langfuse rollup | ⚙️ thin custom (tagging) |
+| **Cost allocation to issues/tasks** | Inject issue-ID tag/`sessionId` per call (§4 (deleted 2026-10-11; see git history)) → Langfuse rollup | ⚙️ thin custom (tagging) |
 | **Efficiency analysis** | Cost/latency/token rollups per issue/model/step | ✅ once telemetry + tags land |
 | **Eval different configs (workflows/skills/models)** | Langfuse **datasets + experiments** + LLM-judge/code scorers | ✅ Langfuse (verify agentic-run shape, §4.5) |
 | **Continuous evals / learning** | Langfuse eval-over-traces + dataset experiments (eval-of-configs, not fine-tuning) | ✅ Langfuse |
@@ -112,8 +112,8 @@ The decision is made; these are the things to confirm during the build, not bloc
 
 ## 7. Follow-ups beyond this doc
 
-- **Sync [planning.md](./planning.md):** §12a's "Langfuse vs Phoenix vs Helicone — confirm at build" lean and §15 open-decision #8 are now **settled** by this record — update both to point here and mark #8 resolved. *(Not done in this doc; flagged for the next planning.md edit.)*
-- **Roadmap — monitor L3-judge calibration (drift-vs-human).** The Stage-3 orchestration module ([`orchestration.md`](./orchestration.md) §5.4) gates milestones partly on an **LLM judge** over plain-language acceptance criteria. LLM judges are reliable-but-not-*valid* (position / verbosity / self-preference / length bias), so the judge needs **ongoing calibration**: spot-check its verdicts against human judgment and flag when they diverge past **~20–25%** (→ the rubric needs fixing). This is an **observability-plane** concern, not something the loop self-polices — and it maps cleanly onto tools we've already chosen: Langfuse persists the judge's **scores** and supports **human annotation** of the same traces, so a **judge-vs-human agreement metric** (per rubric / per milestone-type, over a rolling window, with a divergence alert) is a Langfuse eval-over-traces + annotation build. Fold this into the Stage-4 build as a first-class eval, since it's what keeps the autonomous verify loop trustworthy. *(Also: prefer one anchored judge over multi-agent debate — debate amplifies bias — so the metric tracks a single judge, not an ensemble.)*
+- **Sync planning.md (deleted 2026-10-11; see git history):** §12a's "Langfuse vs Phoenix vs Helicone — confirm at build" lean and §15 open-decision #8 are now **settled** by this record — update both to point here and mark #8 resolved. *(Not done in this doc; flagged for the next planning.md edit.)*
+- **Roadmap — monitor L3-judge calibration (drift-vs-human).** The Stage-3 orchestration module (`orchestration.md` (deleted 2026-10-11; see git history) §5.4) gates milestones partly on an **LLM judge** over plain-language acceptance criteria. LLM judges are reliable-but-not-*valid* (position / verbosity / self-preference / length bias), so the judge needs **ongoing calibration**: spot-check its verdicts against human judgment and flag when they diverge past **~20–25%** (→ the rubric needs fixing). This is an **observability-plane** concern, not something the loop self-polices — and it maps cleanly onto tools we've already chosen: Langfuse persists the judge's **scores** and supports **human annotation** of the same traces, so a **judge-vs-human agreement metric** (per rubric / per milestone-type, over a rolling window, with a divergence alert) is a Langfuse eval-over-traces + annotation build. Fold this into the Stage-4 build as a first-class eval, since it's what keeps the autonomous verify loop trustworthy. *(Also: prefer one anchored judge over multi-agent debate — debate amplifies bias — so the metric tracks a single judge, not an ensemble.)*
 
 ---
 
@@ -122,4 +122,4 @@ The decision is made; these are the things to confirm during the build, not bloc
 - **Deep-research run (2026-06-16):** 5 angles → 21 sources → 97 claims → 25 adversarially verified → 21 confirmed / 4 refuted → 9 findings. Run ID `wf_1c303415-ff8`. *(Established LiteLLM/Langfuse/TensorZero/Helicone/OpenLIT baseline.)*
 - **Helicone vs Langfuse focused research (2026-06-17):** two parallel primary-source agents — surfaced both acquisitions, the Helicone Claude Code legacy-proxy/Rust-gateway-format issue, Langfuse's active ClickHouse-backed status, and license/self-host detail. Primary sources: [ClickHouse acquires Langfuse](https://clickhouse.com/blog/clickhouse-acquires-langfuse-open-source-llm-observability), [Helicone joining Mintlify](https://www.helicone.ai/blog/joining-mintlify), [Mintlify acquires Helicone](https://www.mintlify.com/blog/mintlify-acquires-helicone), [Langfuse GitHub](https://github.com/langfuse/langfuse), [Helicone Claude Code integration](https://docs.helicone.ai/integrations/anthropic/claude-code), [Helicone AI Gateway](https://docs.helicone.ai/gateway/overview), [Langfuse self-host/license](https://langfuse.com/self-hosting/license-key), [LiteLLM virtual keys](https://docs.litellm.ai/docs/proxy/virtual_keys), [LiteLLM OTel](https://docs.litellm.ai/docs/observability/opentelemetry_integration).
 - **TensorZero-alternatives research (2026-06-17):** launched, then **stopped** when this decision rendered it moot (run ID `wf_dfefca79-6a7`).
-- **Design context:** [planning.md §0.2, §4, §12a, §15](./planning.md); [references/technologies.md](./references/technologies.md).
+- **Design context:** planning.md §0.2, §4, §12a, §15 (deleted 2026-10-11; see git history); [references/technologies.md](./references/technologies.md).

@@ -1,6 +1,6 @@
 # Library Analysis
 
-Deeper-than-README analysis of every position in the reference library ([technologies.md](./technologies.md)) plus the named candidates from [workflow-orchestration-analysis.md](../workflow-orchestration-analysis.md). For each project: what it actually is (beyond the README), core features, what it could bring to *our* setup, and 2-4 open-source alternatives (>1000⭐) frequently cited in the same category.
+Deeper-than-README analysis of every position in the reference library ([technologies.md](./technologies.md)) plus the named candidates from workflow-orchestration-analysis.md (deleted 2026-10-11; see git history). For each project: what it actually is (beyond the README), core features, what it could bring to *our* setup, and 2-4 open-source alternatives (>1000⭐) frequently cited in the same category.
 
 *Companion to `technologies.md` (which stays the clean catalog). Generated 2026-06-16 via parallel web research, one focused pass per project.*
 

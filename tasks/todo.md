@@ -6,16 +6,13 @@ retros worth keeping.
 
 ## Open
 
-Nothing in flight in this repo. Live work is tracked as issues in the primitive
-repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
-
 ### In flight
 
-- **Lifecycle skills rewrite** — design `tasks/lifecycle-skills-rewrite-design.md`,
-  plan `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`. Pilot **landed**: PR #2
-  (`milestoned-plan-dag`) and PR #9 (`spec-lifecycle`) both merged; `lifecycle-plan`
-  and `evals/` now exist. Remaining scope, if any, should be re-derived from the
-  plan rather than from this entry.
+- **kentra-rpir** — design `kentra-rpir.md`, plan
+  `docs/superpowers/plans/2026-10-11-kentra-rpir.md`. Replaces `spec-lifecycle` and
+  `agent-orchestration`.
+- **Parked:** kafka-dq `002-rule-engine` plan-audit fixes (unanswered at the
+  2026-10-11 switch to kentra-rpir; kafka-dq is to be rebuilt).
 
 ### Resolved 2026-08-17
 
@@ -36,18 +33,15 @@ repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
 
 ### Open issues by repo (as of 2026-09-10)
 
-- `spec-lifecycle` — **#12 (`lifecycle-refine` elicitation-first rewrite)**,
-  **#13 (`lifecycle-design` elicitation-first rewrite)**, **#14 (constitution
-  handling across the stage skills)**, #11 (no way to suppress the AGENTS.md
-  pointer block), #6 (remove OpenSpec references; ~half done), #5 (stable
-  identifiers; slug half shipped, stored-ID and scenario-ops halves open).
-- `agent-orchestration` — #32 (consume `milestoned-plan-dag` for execution
-  ordering), #42 (empty `contract.paths` → `git add -A`; the diff-confinement
-  gate is never wired at all), #43 (milestone contracts never run the linter),
-  #46 (`orch daemon start` should warn when `KENTRA_BOT_GH_TOKEN` is absent),
-  #47 (change-level L2 healthcheck is the always-pass default on every
-  production run), #48 (agent box gets empty `skills/`/`plugins/` —
-  `kentra-skills` never seeded).
+- `kentra-rpir` (formerly `spec-lifecycle`) — **#12 (`lifecycle-refine`
+  elicitation-first rewrite)** — obsolete — retired 2026-10-11, **#13
+  (`lifecycle-design` elicitation-first rewrite)** — obsolete — retired
+  2026-10-11, **#14 (constitution handling across the stage skills)** —
+  obsolete — retired 2026-10-11, #11 (no way to suppress the AGENTS.md pointer
+  block) — obsolete — retired 2026-10-11, #6 (remove OpenSpec references; ~half
+  done) — obsolete — retired 2026-10-11, #5 (stable identifiers; slug half
+  shipped, stored-ID and scenario-ops halves open) — obsolete — retired
+  2026-10-11.
 - `harness` — **#4 (domain glossary + grill-with-docs)**, **#5 (full track
   record: session + plan + implementation, benchmarkable)**, #2 (stale box bind
   mount; box reuse lacks a mount-liveness check).
@@ -58,7 +52,7 @@ repos (see below) and in `tasks/plans/2026-08-11-lifecycle-skills-rewrite.md`.
   config that fails validation).
 - `milestoned-plan-dag` — **#5 (plan provenance: pointer to the planning
   session)**, #1 (per-milestone `checkpoint: true` + plan-level `healthcheck`;
-  the natural fix vehicle for agent-orchestration#47).
+  raised as the now-retired agent-orchestration#47).
 - `claudebox` — #11 (`cb login` still provisions credential files against an
   `env_auth` box).
 - `kentra-skills`, `kentra-agentic-plugins` — none open.
@@ -71,16 +65,14 @@ Four concepts were captured as issues; none is refined, and no scope is
 approved. They form one cluster — the **planning leg's elicitation and its
 record**:
 
-- **Elicit before formalizing.** spec-lifecycle#12/#13 rewrite `refine` and
-  `design` as collaborative, question-driven stages on `/grill-me` principles.
-  Upstream pinned 2026-09-25: `mattpocock/skills` (MIT, `c55ee46`) — `grill-me`
+- **Elicit before formalizing.** (formerly `spec-lifecycle`#12/#13 — obsolete, retired 2026-10-11: those issues rewrote `refine`/`design` as collaborative, question-driven stages, a shape kentra-rpir's interactive spec stage now supersedes.) Upstream pinned 2026-09-25: `mattpocock/skills` (MIT, `c55ee46`) — `grill-me`
   and `grill-with-docs` are trampolines over `grilling` (design tree, frontier,
   batched rounds) and `domain-modeling` (glossary + ADRs written during the
   interview); both transcribed into the issues.
   Continuation of the 2026-08-11 skills-rewrite pilot (which covered
   `/lifecycle-plan` only) *plus* the elicitation phase the pilot did not
   design.
-- **Constitution in the loop.** spec-lifecycle#14 — consult it (via
+- **Constitution in the loop.** (formerly `spec-lifecycle`#14 — obsolete, retired 2026-10-11.) Consult it (via
   `constitution-gov`'s force-inline rather than a pointer), gate on it, and
   route ADR proposals, consistently across every stage skill. **Decided
   2026-09-25:** the two primitives are an intended pairing, and a repo with no
@@ -97,16 +89,11 @@ record**:
 - **`.claudebox/tmp/` convention** — `tasks/claudebox-tmp-convention.md`. The
   gitignore half shipped (harness `d4b9e76`); no rule in
   `AGENTS.md`/`CLAUDE.md` and no hook.
-- **Stage 4 / Stage 5 designs** (LiteLLM + Langfuse; A/B experiment controller)
-  and the `agent-definition` decisions — sole home is
-  `tasks/orchestration-runtime-handoff.md`. harness#5 is the substrate half of
-  Stage 5, now filed.
-- **`openspec/` directory rename** — `spec-lifecycle/README.md:5` points at
-  spec-lifecycle#6 as the tracker, but #6's body explicitly excludes the
-  rename. Nothing tracks it.
-Previously listed here and now filed: **refine elicitation** (→
-spec-lifecycle#12/#13) and **change → plan → conversation traceability** (→
-harness#5, milestoned-plan-dag#5).
+- **`openspec/` directory rename** — obsolete, retired 2026-10-11 (the `spec-lifecycle` OpenSpec-format tree it referred to no longer exists).
+
+Previously listed here and now filed: **refine elicitation** (→ kentra-rpir#12/#13, formerly `spec-lifecycle`#12/#13 — obsolete, retired 2026-10-11) and **change → plan → conversation traceability** (→ harness#5, milestoned-plan-dag#5).
+
+The **Stage 4 / Stage 5 designs** (LiteLLM + Langfuse; A/B experiment controller) and the `agent-definition` decisions entry that used to live here — obsolete, retired 2026-10-11: its sole home, `tasks/orchestration-runtime-handoff.md`, was deleted with those designs — see git history.
 
 ### Retired docs (2026-09-25) — where their content went
 
