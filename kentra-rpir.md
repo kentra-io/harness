@@ -1,6 +1,6 @@
 # kentra-rpir — process design
 
-**Status:** draft for review · 2026-10-11 · lives in harness because the build spans several submodules; the plugin's own `docs/process.md` will be derived from it.
+**Status:** approved 2026-10-11 · updated for 0.4.0 on 2026-10-15 · lives in harness because the build spans several submodules; the plugin's own `docs/process.md` will be derived from it.
 
 kentra-rpir is a Claude Code plugin for running one change — a feature, a bug, a
 chore — from idea to merged code, for a solo founder. It is RPI
@@ -624,7 +624,7 @@ README.md
 Agents define the system prompt and the default model only; they do not restrict
 tools.
 
-## Changes in other repositories
+## Changes in other repositories (migration, done 2026-10-12)
 
 | Repository | Change |
 |---|---|
