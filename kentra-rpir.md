@@ -10,8 +10,8 @@ Microsoft's HVE Core adds Review under the same acronym.
 
 It replaces `spec-lifecycle`. The gates, the OpenSpec format, the living specs and
 the `lifecycle` CLI are gone. The only machine validation left is the plan schema,
-checked by the `milestoned-plan-dag` CLI. The other CLI the process can use is
-`constitution`, and only when a project opts into a constitution.
+checked by the `milestoned-plan-dag` CLI (0.3.0 or later). The other CLI the process
+can use is `constitution`, and only when a project opts into a constitution.
 
 ## Principles
 
@@ -33,12 +33,15 @@ checked by the `milestoned-plan-dag` CLI. The other CLI the process can use is
 ```
 .kentra-rpir.yaml                  # project config (committed)
 .kentra-rpir/sessions.map          # session id → change folder (gitignored)
+.kentra-rpir/plan/<change>/        # the plan's fragments while it is written (gitignored)
 docs/changes/
   2026-10-11-<slug>/
     spec.md
     plan.yaml
     impl-report.md
     spec-retro.md
+    research/
+      spikes/<slug>/               # spikes and their result.md (gitignored)
     sessions/
       <session-id>.jsonl
       <session-id>/subagents/**    # subagent and workflow-agent transcripts
@@ -51,6 +54,9 @@ docs/changes/
 - `.worktrees/` holds the implement stage's worktrees and is gitignored.
 - `sessions/` is committed. It is the audit trail: how the change came to be and
   how it was built.
+- `research/spikes/` holds every spike and its `result.md` and is gitignored with
+  the pattern `<changesDir>/*/research/spikes/`; tools the project needs come out
+  as committed deliverables instead.
 
 ### `.kentra-rpir.yaml`
 
@@ -61,10 +67,12 @@ fields marked † and uses the defaults for everything else.
 changesDir: docs/changes            # †
 tracker: none                       # † none | github | jira
 constitution: false                 # † true when constitution/constitution.md exists and should be used
+tier: full                          # † full | light
 spec:
   questionBatch: 5                  # max questions asked in one message
 roles:                              # agent: a subagent type; model: overrides the agent's own
   reviewer:    { agent: kentra-rpir:reviewer,    model: opus }    # spec and plan self-review
+  plan-writer: { agent: kentra-rpir:plan-writer, model: opus }    # one per milestone, fills the plan skeleton
   implementer: { agent: kentra-rpir:implementer, model: sonnet }
   verifier:    { agent: kentra-rpir:verifier,    model: opus }
   impl-orchestrator: { model: opus }                            # the main session running implement
@@ -73,8 +81,9 @@ roles:                              # agent: a subagent type; model: overrides t
   reader:      { agent: kentra-rpir:retro,       model: sonnet }  # per-milestone blind readers
 research:
   workflow: kentra-rpir:research    # or a user/project workflow with the same args contract
-  collector: haiku
-  reasoner: opus
+  checker: sonnet                   # tier-1 docs check, one per topic
+  designer: opus                    # splits an escalated premise into spike experiments
+  reasoner: opus                    # judges the spike, writes the verdict
 implement:
   maxAttempts: 3                    # per blocker: 2 re-dispatches with guidance, then the user
   maxVerifyRounds: 3                # implement → verify → fix rounds per milestone
@@ -83,9 +92,34 @@ implement:
   openPullRequest: true             # only when the remote is GitHub and gh is authenticated
 ```
 
+**Tiers.** `tier` is the default for every change; the spec records its own and the
+spec stage recommends the other tier when a change fits it better. `full` researches
+every claim that is not in the ledger and writes complete code in every plan step.
+`light` researches only `critical` claims, leaves `normal` ones `unverified`
+(evidence `—`; the self-review accepts that at `light`), and writes each step with
+the best code available knowledge supports — a step resting on an unverified premise
+names it and states the outcome its code must reach. Both tiers spike a `critical`
+claim the docs don't settle.
+
 A project points a role at its own `.claude/agents/<name>.md` to tune the system
 prompt. The skills read this file and pass the values to the workflows as `args`, so a
 change takes effect on the next run.
+
+## Premises ledger
+
+The spec's Premises table and the plan's `# premises:` block, together, are the
+**ledger**. Every premise carries an importance — `critical` when, if it is wrong,
+the shape changes (the milestones, a design decision or the approach); `normal` when
+it would be fixed inside one milestone — a status (`verified`, `refuted` or
+`unverified`) and its evidence (`docs: <source>` or `spike: research/spikes/<slug>/`).
+A premise is recorded only when the spec or plan would change if it were wrong; what
+an implementer settles while writing code is not a premise.
+
+Every premise is researched once: the spec stage's own research, the plan stage's
+research, and every self-review all skip a premise already in the ledger, whatever
+its status. A ledger premise is **re-opened**, and its row updated in place, only
+when a later edit changes something it rests on — a version, an API, a platform, or
+the behaviour relied on.
 
 ## Stage 1 — spec
 
@@ -103,14 +137,22 @@ It ends only when the user says they are aligned.
 3. **Ask.** Ask the questions together, up to `spec.questionBatch` per message,
    whenever they do not depend on each other's answers. Ask one at a time when
    an answer changes what to ask next. Prefer multiple choice. Record each
-   **premise** (something the change assumes is true) as it surfaces.
-4. **Research in the background.** For each premise about an external system
-   (an API, a library version, a protocol, another product's behaviour), start the
-   research workflow in the background and keep talking. Research reads primary
-   sources — source code at a pinned version over docs over blog posts — and runs a
-   spike when a claim is about behaviour. Results update the premise's status:
-   `verified`, `refuted` or `unverified`. A refuted premise is raised with the user
-   straight away.
+   **premise** (something the change assumes is true) as it surfaces, only when the
+   spec or plan would change if it were wrong, with its importance: `critical` when,
+   if it is wrong, the shape changes — a requirement, a design decision or the
+   milestones; `normal` when it would be fixed inside one milestone. When the change
+   fits the other tier better than the config's default, the skill recommends it and
+   the user chooses.
+4. **Research in the background.** At the change's tier (`full`: every premise;
+   `light`: `critical` premises only), for each premise about an external system
+   (an API, a library version, a protocol, another product's behaviour) that is not
+   already in the [ledger](#premises-ledger), start the research workflow in the
+   background and keep talking. Research reads primary sources — source code at a
+   pinned version over docs over blog posts — and runs a spike when a claim is about
+   behaviour and the docs can't settle it; spikes stay in the change's gitignored
+   `research/spikes/` (see [Research](#research)). Results update the premise's
+   status: `verified`, `refuted` or `unverified`. A refuted premise is raised with
+   the user straight away.
 5. **Propose approaches.** For the design choices, give 2–3 options with
    trade-offs and a recommendation.
 6. **Write `spec.md`** from `templates/spec.md`, and show it section by section.
@@ -136,7 +178,7 @@ sessions: sessions/      # the planning transcripts for this change
 ## Problem
 ## Goals
 ## Non-goals
-## Premises             # each with status: verified | refuted | unverified, and its source
+## Premises             # each with importance, status (verified | refuted | unverified) and evidence
 ## Requirements         # plain, numbered, testable statements
 ## Design               # decisions and their rationale; the options not taken
 ## Open questions       # must be empty at status: agreed
@@ -151,28 +193,30 @@ that an implementer never needs to explore the codebase to learn what to do.
 
 1. **Read** `spec.md`, the constitution if it is enabled, and the code the change
    touches. Record the session in `sessions.map`.
-2. **Research deeper.** Use the research workflow for the details the plan depends
-   on: exact APIs, builder names, versions to pin. Run spikes for any third-party
-   API the code will call. Ask the user only when a question is about intent rather
-   than fact.
-3. **Draft `plan.yaml`** following the `plan-author` skill from
-   `milestoned-plan-dag`. The bar is the superpowers plan: every milestone carries
-   - a `description`: the why, and how this milestone fits with the others
-     (the plan has its own `description` for context every milestone shares);
-   - `deliverables`: each file with the type it introduces and that type's
-     responsibility;
-   - `steps`: bite-sized and ordered, with the exact code where it matters;
-   - `contract`: the standard `check`, criteria naming the test that proves each
-     behaviour, and `paths`;
-   - `rules`: references to what the implementer must load beyond the auto-loaded
-     `CLAUDE.md`/`AGENTS.md`, such as skills, the constitution and docs (see
-     [Rules](#rules)).
-4. **Design for parallel work.** Independent milestones get non-overlapping
-   `paths`. Shared types and versions belong in the earliest milestone that needs
-   them. Every type that crosses a milestone boundary is named with its signature
-   where it is first introduced.
-5. **Validate** with `milestoned-plan-dag validate` after every edit.
-6. **Self-review** against the spec, the constitution and the project rules.
+2. **Research the plan's shape.** The research workflow checks the claims the
+   plan's shape rests on, at the change's tier, skipping any premise already in
+   the [ledger](#premises-ledger).
+3. **Write the skeleton.** The main session is the plan's author. It writes the
+   plan as fragments in `.kentra-rpir/plan/<change>/`: `head.yaml`, one file per
+   milestone, `tail.yaml`. Each milestone has its goal, description, deliverables
+   (with the full signature of every type that crosses milestones), contract,
+   explicit `depends-on` and `rules`, and a placeholder step. Independent
+   milestones get non-overlapping `paths`; shared types and versions belong in the
+   earliest milestone that needs them. `scripts/assemble-plan.sh` concatenates the
+   fragments into `plan.yaml`, and `milestoned-plan-dag validate` checks it.
+4. **Skeleton review.** Self-review in `skeleton` mode checks the shape:
+   coverage, paths, pins, independence, scope, validity.
+5. **Write the milestones.** The `plan-milestones` workflow runs one writer
+   (`roles.plan-writer`, Opus) per milestone, in parallel. Each fills its own
+   fragment — steps with their code, criteria with given/when/then — keeping the
+   skeleton's contract, and returns the claims it depends on and any interface
+   request. The workflow researches those claims at the tier and has each writer
+   whose claims research did not verify revise its milestone. The author settles
+   interface requests, re-running a writer with `only` and the author's `guidance`
+   when needed, and records outcomes in `# premises:`.
+6. **Self-review** — split: one reviewer per milestone, one for the plan as a
+   whole, merged by a consolidator — against the spec, the constitution and the
+   project rules.
 7. **Present** each milestone as a single line with its goal and tests, then the
    DAG and any flagged items. Once the user approves, set `status: planned`, capture
    the session and commit.
@@ -208,14 +252,24 @@ skills those files call for.
 
 1. **Review.** The reviewer role answers a fixed checklist with **yes or no**, citing
    evidence for every "no". The spec checklist asks whether the spec says what the
-   session decided, whether every premise has a status, and whether any requirement
-   conflicts with a rule. The plan checklist asks whether every requirement lands in
-   a milestone; whether each milestone's criteria can be met within its own `paths`,
+   session decided, whether every premise has an importance, a status and evidence,
+   and whether any requirement conflicts with a rule. The plan checklist asks
+   whether every requirement lands in a milestone; whether each milestone's
+   criteria can be met within its own `paths`,
    using only what its dependencies produce; whether every cross-milestone type is
    named; whether versions are pinned; whether independent milestones overlap; and
    whether `rules` are minimal and relevant.
+
+   A plan's full review is split: one reviewer per milestone answers the
+   milestone checks (P2, P3, P6–P11) from that milestone's fragment, one plan-wide
+   reviewer answers P1, P4, P5 and P12 (P5 from `milestoned-plan-dag resolve`), and a
+   consolidator — the review's orchestrator — merges them, settles conflicts, and
+   adds the cross-milestone gaps no single reviewer could see. A skeleton review
+   answers P1, P2, P4, P5, P11 and P12 on the skeleton.
 2. **Research.** The reviewer lists the claims it could not check. The workflow
    runs the research workflow on them and gives the results back to the reviewer.
+   At the `light` tier only `critical` claims are researched; `normal` ones come
+   back as `unverified`.
 3. **Triage.** For each "no", the reviewer decides:
    - **Needs a decision.** Intent is ambiguous, there is a trade-off, the document
      conflicts with the session, or the document conflicts with the constitution.
@@ -289,7 +343,10 @@ so before starting.
 3. **Dispatch a fresh verifier** (`roles.verifier`) in the same worktree — never the
    implementer's context. It checks:
    - the `check` command passes;
-   - each criterion's named test exists, asserts what the criterion says, and passes;
+   - every criterion holds: a named test exists, asserts what the criterion says and
+     passes; a named command shows what the criterion's `then` says; a criterion
+     naming `human:` in place of a test is left to the user, who checks it at the
+     finish;
    - the diff stays inside `paths`;
    - the code does what the milestone's description and steps intend;
    - the code follows every rule in the plan-level and milestone `rules`.
@@ -299,7 +356,10 @@ so before starting.
 4. **Integrate** on `PASS`: merge the milestone branch into the integration branch,
    resolve any conflict, run `check` there, remove the milestone worktree, and
    dispatch whatever is now unblocked.
-5. **Finish.** Write `impl-report.md`, capture the session, push the branch, open a
+5. **Finish.** Show the user every PENDING (`human:`) criterion the verifiers
+   found, in the integration worktree, and record each answer; a rejected one is
+   fixed in a new milestone worktree, verified and integrated before the report.
+   Then write `impl-report.md`, capture the session, push the branch, open a
    pull request when `implement.openPullRequest` is set and the remote is GitHub,
    and set `status: in-review`.
 
@@ -405,15 +465,18 @@ finding points at the spec or plan.
    versions, the sessions read.
 2. **Outcome:** two or three sentences, taken from the verifier's results rather
    than the report.
-3. **Self-report reconciliation:** one row per claim, with its verdict and evidence.
-4. **Timeline:** per milestone, with decisive points marked.
-5. **Findings:** id, fault class, decisive step with its reference, how it made
+3. **Implementation cost:** per milestone, the implementer dispatches, verify
+   rounds, fresh tokens and wall time; and the orchestrator's own fresh tokens and
+   wall time.
+4. **Self-report reconciliation:** one row per claim, with its verdict and evidence.
+5. **Timeline:** per milestone, with decisive points marked.
+6. **Findings:** id, fault class, decisive step with its reference, how it made
    sense at the time, severity.
-6. **What went well:** what to keep, so that a fix does not undo it.
-7. **Actions:** one per finding, as above.
-8. **Recurring:** fault classes and findings also seen in earlier retros in
+7. **What went well:** what to keep, so that a fix does not undo it.
+8. **Actions:** one per finding, as above.
+9. **Recurring:** fault classes and findings also seen in earlier retros in
    `docs/changes/*/spec-retro.md`.
-9. **Open questions:** what the evidence could not settle.
+10. **Open questions:** what the evidence could not settle.
 
 ## Session capture
 
@@ -450,13 +513,41 @@ only job and that the relayed message is background.
 
 **Workflow:** `kentra-rpir:research` — the user-space `research` workflow, adapted.
 
-- **Collectors** (`research.collector`, Haiku): one per angle, returning sources and
-  verbatim excerpts.
-- **Reasoner** (`research.reasoner`, Opus): one per topic. It checks the claims the
-  decision depends on, runs spikes when a claim is about behaviour, and writes the
-  result.
-- **Default angles:** official docs and changelogs; source code at a pinned
-  version; issues and field reports; a local spike.
+Research runs in two tiers, and never twice for the same premise (see
+[Premises ledger](#premises-ledger)):
+
+1. **Check** (`research.checker`, Sonnet). One per topic, all in parallel. It reads
+   the official docs and changelog for the version in question, the source at that
+   version, and field reports, and returns a verdict (`verified`, `refuted` or
+   `unverified`) with a confidence (`high`, `medium` or `low`) and its evidence. It
+   runs no code.
+2. **Spike**, only for a topic that escalates:
+
+   ```
+   topic.spike === true, or
+   topic.importance === 'critical' and the check's confidence is not 'high'
+   ```
+
+   A **designer** (`research.designer`, Opus) splits the premise into independent
+   experiments — one per platform, version or edge case — writes each as a file, and
+   runs each once. A **judge** (`research.reasoner`, Opus) reads every file, re-runs
+   every experiment itself, judges from its own runs, and writes `result.md`.
+
+The checker writes its own report file, `<prefix>-<slug>.md`, with the naming
+convention `<stage>-<slug>.md` (`spec-`, `plan-`, and `<stage>-review-` for
+self-review research).
+
+A topic the docs cannot settle, and that does not escalate, stays `unverified` with
+a note that a spike is available on request.
+
+**Spikes are readable.** Every spike is a file written with the Write tool and run
+with one short command (`sh <file>`, `node <file>`, …) — never a heredoc, an inline
+`-c`/`-e` program, chained or piped commands, a background process, command
+substitution, a redirect, or anything that reads stdin.
+
+**Spikes stay out of git.** Every spike file, its output and its `result.md` live in
+`<change folder>/research/spikes/<prefix>-<slug>/`, gitignored by the pattern
+`<changesDir>/*/research/spikes/`.
 
 `research.workflow` can point at any workflow with the same `args` contract, such as
 the user's own `research`.
@@ -468,9 +559,11 @@ the user's own `research`.
 skills/
   spec/SKILL.md   plan/SKILL.md   implement/SKILL.md   review/SKILL.md
 agents/
-  reviewer.md  implementer.md  verifier.md  retro.md
+  reviewer.md  plan-writer.md  implementer.md  verifier.md  retro.md
 workflows/
-  self-review.js  spec-retro.js  research.js
+  self-review.js  spec-retro.js  research.js  plan-milestones.js
+scripts/
+  assemble-plan.sh
 hooks/
   hooks.json  capture-session.sh
 templates/
