@@ -218,8 +218,12 @@ that an implementer never needs to explore the codebase to learn what to do.
    whole, merged by a consolidator — against the spec, the constitution and the
    project rules.
 7. **Present** each milestone as a single line with its goal and tests, then the
-   DAG and any flagged items. Once the user approves the plan, write the planning
-   log, set `status: planned`, and commit.
+   DAG and any flagged items. A "how" decision — file layout, milestone structure,
+   module split, order of work — is written into `plan.yaml`, never into `spec.md`.
+   The spec changes only for a requirement, goal, non-goal or design decision, as a
+   **spec amendment**: the smallest edit, a diff review, the user's approval, and a
+   commit — `status` stays `agreed`, never reset to `draft`. Once the user approves
+   the plan, write the planning log, set `status: planned`, and commit.
 
 ### Rules
 
@@ -241,6 +245,17 @@ trimming the skills enabled in the project or the user space.
 **Workflow:** `kentra-rpir:self-review` · run by `spec` and `plan` before the user sees
 the document
 
+A new document gets a **full** review, once. A later edit to a reviewed or agreed
+document gets a **diff** review, or none, by how much it changes:
+
+| The edit | Review |
+|---|---|
+| A new document | First spec: full self-review, once. First plan: skeleton review, then full self-review, once each. |
+| An edit that changes a requirement, goal, non-goal, premise, design decision, milestone contract, `paths`, `deliverables`, or step code | Diff review. |
+| Wording, typos, formatting; applying a self-review `technical` fix verbatim | No review. The user sees the diff. Technical fixes still go to the writer-gaps list. |
+
+When unsure, use a diff review.
+
 | Stage | Document | Checked against |
 |---|---|---|
 | spec | `spec.md` | the planning log, the constitution, project rules |
@@ -250,15 +265,19 @@ the document
 `CLAUDE.md`/`AGENTS.md` files on their paths, path-scoped `.claude/rules`, and the
 skills those files call for.
 
-1. **Review.** The reviewer role answers a fixed checklist with **yes or no**, citing
-   evidence for every "no". The spec checklist asks whether the spec says what the
-   session decided, whether every premise has an importance, a status and evidence,
-   and whether any requirement conflicts with a rule. The plan checklist asks
-   whether every requirement lands in a milestone; whether each milestone's
-   criteria can be met within its own `paths`,
-   using only what its dependencies produce; whether every cross-milestone type is
-   named; whether versions are pinned; whether independent milestones overlap; and
-   whether `rules` are minimal and relevant.
+1. **Review.** In full mode, the reviewer role answers a fixed checklist with
+   **yes or no**, citing evidence for every "no". The spec checklist asks whether
+   the spec says what the session decided, whether every premise has an importance,
+   a status and evidence, and whether any requirement conflicts with a rule. The
+   plan checklist asks whether every requirement lands in a milestone; whether each
+   milestone's criteria can be met within its own `paths`, using only what its
+   dependencies produce; whether every cross-milestone type is named; whether
+   versions are pinned; whether independent milestones overlap; and whether `rules`
+   are minimal and relevant. In diff mode, the reviewer reads only the diff against
+   the last reviewed or agreed version and checks that it does what the user decided
+   and nothing else, and that it contradicts nothing else in the document (or, for a
+   plan diff, in the spec); a plan diff also checks that
+   `milestoned-plan-dag validate` still exits 0.
 
    A plan's full review is split: one reviewer per milestone answers the
    milestone checks (P2, P3, P6–P11) from that milestone's fragment, one plan-wide
@@ -266,15 +285,19 @@ skills those files call for.
    consolidator — the review's orchestrator — merges them, settles conflicts, and
    adds the cross-milestone gaps no single reviewer could see. A skeleton review
    answers P1, P2, P4, P5, P11 and P12 on the skeleton.
-2. **Research.** The reviewer lists the claims it could not check. The workflow
-   runs the research workflow on them and gives the results back to the reviewer.
-   At the `light` tier only `critical` claims are researched; `normal` ones come
-   back as `unverified`.
-3. **Triage.** For each "no", the reviewer decides:
+2. **Research.** The reviewer lists the claims it could not check, each with its
+   importance. The workflow skips any claim already in the
+   [ledger](#premises-ledger), whatever its status — there is no cap on how many
+   claims are researched — and re-researches a ledger premise only when the
+   document changes what it rests on. It runs the research workflow on the rest and
+   gives the results back to the reviewer. At the `light` tier only `critical` claims
+   are researched; `normal` ones come back as `unverified`.
+3. **Triage.** For each "no" or unresolved claim, the reviewer decides:
    - **Needs a decision.** Intent is ambiguous, there is a trade-off, the document
-     conflicts with the session, or the document conflicts with the constitution.
-     The main session stops and asks the user. The user decides, and the main session
-     then edits the spec, the plan or the rule (through an ADR).
+     conflicts with the session, the document conflicts with the constitution, or a
+     `critical` premise stays unverified after research. The main session stops and
+     asks the user. The user decides, and the main session then edits the spec, the
+     plan or the rule (through an ADR).
    - **Technical gap.** The writer missed something whose answer is clear: a missing
      type name, an unpinned version, overlapping `paths`. The main session applies
      the fix, tells the user in one line, and appends it to the document's
