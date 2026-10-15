@@ -69,7 +69,7 @@ RUN set -eux; \
 # implement stages call it.
 # NOTE: keep MPD_REF in sync with the harness's milestoned-plan-dag submodule
 # pointer (`git -C milestoned-plan-dag rev-parse HEAD`) whenever it bumps.
-ARG MPD_REF=ffff6e72b36600fae17a2da60d47be79ac7dd8e6
+ARG MPD_REF=5da7f1780979e622a3bebe5f9cab14bd84502479
 RUN set -eux; \
     git clone --filter=blob:none --quiet https://github.com/kentra-io/milestoned-plan-dag /tmp/milestoned-plan-dag; \
     cd /tmp/milestoned-plan-dag; \
