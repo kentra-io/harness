@@ -147,12 +147,12 @@ It ends only when the user says they are aligned.
    `light`: `critical` premises only), for each premise about an external system
    (an API, a library version, a protocol, another product's behaviour) that is not
    already in the [ledger](#premises-ledger), start the research workflow in the
-   background and keep talking. Research reads primary sources — source code at a
-   pinned version over docs over blog posts — and runs a spike when a claim is about
-   behaviour and the docs can't settle it; spikes stay in the change's gitignored
-   `research/spikes/` (see [Research](#research)). Results update the premise's
-   status: `verified`, `refuted` or `unverified`. A refuted premise is raised with
-   the user straight away.
+   background and keep talking. Research checks the docs and source at the pinned
+   version first, and spikes only a `critical` premise the docs can't settle at
+   high confidence, or one marked `spike: true`; spikes stay in the change's
+   gitignored `research/spikes/` (see [Research](#research)). Results update the
+   premise's status: `verified`, `refuted` or `unverified`. A refuted premise is
+   raised with the user straight away.
 5. **Propose approaches.** For the design choices, give 2–3 options with
    trade-offs and a recommendation.
 6. **Write `spec.md`** from `templates/spec.md`, and show it section by section.
@@ -534,8 +534,8 @@ Research runs in two tiers, and never twice for the same premise (see
    every experiment itself, judges from its own runs, and writes `result.md`.
 
 The checker writes its own report file, `<prefix>-<slug>.md`, with the naming
-convention `<stage>-<slug>.md` (`spec-`, `plan-`, and `<stage>-review-` for
-self-review research).
+convention `<stage>-<slug>.md` (`spec-`, `plan-`, and `<stage>-review-`,
+`<stage>-skeleton-review-` or `<stage>-diff-review-` for self-review research).
 
 A topic the docs cannot settle, and that does not escalate, stays `unverified` with
 a note that a spike is available on request.
@@ -563,9 +563,7 @@ agents/
 workflows/
   self-review.js  spec-retro.js  research.js  plan-milestones.js
 scripts/
-  assemble-plan.sh
-hooks/
-  hooks.json  capture-session.sh
+  sessions.sh  redact.sh  planning-log.sh  commit-change.sh  assemble-plan.sh
 templates/
   spec.md  impl-report.md  spec-retro.md  kentra-rpir.yaml
 docs/process.md                 # the user-facing process doc, derived from harness/kentra-rpir.md
