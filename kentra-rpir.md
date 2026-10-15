@@ -23,8 +23,9 @@ can use is `constitution`, and only when a project opts into a constitution.
 3. **Check against the source, not against the writer.** An independent reviewer
    checks the spec and the plan before the user sees them. Research agents check the
    facts these documents depend on against primary sources and spikes.
-4. **The process records itself.** Every session that works on a change is copied
-   into the change folder, so a retro can read what actually happened.
+4. **The process records itself.** The planning sessions are kept as a trimmed log
+   in the change folder; the retro reads the implementation transcripts where
+   Claude Code keeps them.
 5. **Configuration over editing skills.** Models, agent definitions and batch sizes
    live in `.kentra-rpir.yaml`, so they can be tuned from any session.
 
@@ -38,13 +39,11 @@ docs/changes/
   2026-10-11-<slug>/
     spec.md
     plan.yaml
+    planning-log.jsonl             # trimmed spec and plan sessions
     impl-report.md
     spec-retro.md
     research/
       spikes/<slug>/               # spikes and their result.md (gitignored)
-    sessions/
-      <session-id>.jsonl
-      <session-id>/subagents/**    # subagent and workflow-agent transcripts
 ```
 
 - One folder per change. There is no `type` in the path; the spec's frontmatter
@@ -52,11 +51,12 @@ docs/changes/
 - The folder name is `<date the spec started>-<slug>`, and it never moves. A
   finished change stays where it is with `status: done`.
 - `.worktrees/` holds the implement stage's worktrees and is gitignored.
-- `sessions/` is committed. It is the audit trail: how the change came to be and
-  how it was built.
-- `research/spikes/` holds every spike and its `result.md` and is gitignored with
-  the pattern `<changesDir>/*/research/spikes/`; tools the project needs come out
-  as committed deliverables instead.
+- `planning-log.jsonl` is committed; it is the durable record of how the change was
+  defined. `research/` holds the research reports, named `<stage>-<slug>.md`
+  (`spec-`, `plan-`, and `<stage>-review-`, `<stage>-skeleton-review-` or `<stage>-diff-review-` for self-review research). `research/spikes/` holds every
+  spike and its `result.md` and is gitignored with the pattern
+  `<changesDir>/*/research/spikes/`; `commit-change.sh` refuses to commit while the
+  pattern is missing.
 
 ### `.kentra-rpir.yaml`
 
@@ -156,10 +156,10 @@ It ends only when the user says they are aligned.
 5. **Propose approaches.** For the design choices, give 2–3 options with
    trade-offs and a recommendation.
 6. **Write `spec.md`** from `templates/spec.md`, and show it section by section.
-7. **Self-review** (see [Self-review](#self-review)) against the session transcript,
+7. **Self-review** (see [Self-review](#self-review)) against the planning log,
    the constitution and the project rules.
-8. **Agree.** Once the user says the spec is right, set `status: agreed`, capture the
-   session and commit the change folder.
+8. **Agree.** Once the user says the spec is right, set `status: agreed` and commit
+   the change folder.
 
 ### `spec.md`
 
@@ -172,7 +172,7 @@ title: <short name>
 type: feature            # feature | bug | chore | ...
 status: draft            # draft | agreed | planned | implementing | in-review | done
 issue:                   # tracker link, when configured
-sessions: sessions/      # the planning transcripts for this change
+planningLog: planning-log.jsonl   # trimmed spec and plan sessions, written when the plan is approved
 ---
 
 ## Problem
@@ -218,8 +218,8 @@ that an implementer never needs to explore the codebase to learn what to do.
    whole, merged by a consolidator — against the spec, the constitution and the
    project rules.
 7. **Present** each milestone as a single line with its goal and tests, then the
-   DAG and any flagged items. Once the user approves, set `status: planned`, capture
-   the session and commit.
+   DAG and any flagged items. Once the user approves the plan, write the planning
+   log, set `status: planned`, and commit.
 
 ### Rules
 
@@ -243,7 +243,7 @@ the document
 
 | Stage | Document | Checked against |
 |---|---|---|
-| spec | `spec.md` | the session transcript, the constitution, project rules |
+| spec | `spec.md` | the planning log, the constitution, project rules |
 | plan | `plan.yaml` | `spec.md`, the constitution, project rules |
 
 "Project rules" are the rules that govern the files the change will touch: the
@@ -359,7 +359,7 @@ so before starting.
 5. **Finish.** Show the user every PENDING (`human:`) criterion the verifiers
    found, in the integration worktree, and record each answer; a rejected one is
    fixed in a new milestone worktree, verified and integrated before the report.
-   Then write `impl-report.md`, capture the session, push the branch, open a
+   Then write `impl-report.md`, push the branch, open a
    pull request when `implement.openPullRequest` is set and the remote is GitHub,
    and set `status: in-review`.
 
@@ -434,7 +434,8 @@ Grounded in the research on agent-session retros (sources at the end).
 
    | Class | Meaning |
    |---|---|
-   | `SPEC` | The spec or plan was ambiguous or wrong |
+   | `SPEC` | The spec was ambiguous or wrong |
+   | `PLAN` | The plan was ambiguous, wrong, or could not be built as written (a missing step, file, directory, type or pin) |
    | `SKILL` | A skill, agent definition or prompt was missing, wrong or harmful |
    | `PROCESS` | The workflow itself: a handoff, a verification step, the order of steps |
    | `ENV` | Tools, dependencies, sandbox, flaky infrastructure |
@@ -445,7 +446,9 @@ Grounded in the research on agent-session retros (sources at the end).
    chain of causes.
 4. **Reconciliation** (`roles.retro`, a separate agent). Check every claim in
    `impl-report.md` against the blind findings: **confirmed**, **contradicted** or
-   **unsupported**. A contradicted claim is itself a finding.
+   **unsupported**. A contradicted claim is itself a finding. The report lists only
+   the contradicted and unsupported claims, with a count of how many others were
+   confirmed.
 5. **Remediation** (`roles.retro`). Each finding ends in exactly one action:
    - a diff to a named skill, agent definition, template or `CLAUDE.md`, as before
      and after;
@@ -456,8 +459,15 @@ Grounded in the research on agent-session retros (sources at the end).
    Prefer an automated check over adding prose. A proposed skill edit must say what
    text it removes, or why its added length pays for itself.
 
-The spec and plan sessions are available to the readers, but consulted only when a
-finding points at the spec or plan.
+A **planning pre-pass** (`roles.prepass`), one per spec or plan session, reads that
+session's workflow runs for duration, agent count and tokens, its question rounds,
+and any `status:` reset in `spec.md` or `plan.yaml`. A **planning reader**
+(`roles.reader`), run alongside the milestone readers, reads the planning log, the
+spec and plan with their writer-gap lists and premises ledger, and the planning
+metrics — never `impl-report.md` — looking for research or review whose cost did
+not match the risk, a plan gap the self-review should have caught, status resets
+and re-reviews, and questions the user had to ask that a stage should have
+answered.
 
 ### `spec-retro.md`
 
@@ -465,42 +475,62 @@ finding points at the spec or plan.
    versions, the sessions read.
 2. **Outcome:** two or three sentences, taken from the verifier's results rather
    than the report.
-3. **Implementation cost:** per milestone, the implementer dispatches, verify
+3. **Planning cost:** per spec or plan session, the self-review workflow's stage
+   and mode, duration, agent count and tokens; then question rounds, status
+   resets, full and diff review counts, and the planning workflows' total wall
+   time.
+4. **Implementation cost:** per milestone, the implementer dispatches, verify
    rounds, fresh tokens and wall time; and the orchestrator's own fresh tokens and
    wall time.
-4. **Self-report reconciliation:** one row per claim, with its verdict and evidence.
-5. **Timeline:** per milestone, with decisive points marked.
-6. **Findings:** id, fault class, decisive step with its reference, how it made
+5. **Self-report reconciliation:** a row per contradicted or unsupported claim,
+   with its verdict and evidence, plus a count of the claims confirmed.
+6. **Timeline:** per milestone, with decisive points marked.
+7. **Findings:** id, fault class, decisive step with its reference, how it made
    sense at the time, severity.
-7. **What went well:** what to keep, so that a fix does not undo it.
-8. **Actions:** one per finding, as above.
-9. **Recurring:** fault classes and findings also seen in earlier retros in
+8. **What went well:** what to keep, so that a fix does not undo it.
+9. **Actions:** one per finding, as above.
+10. **Recurring:** fault classes and findings also seen in earlier retros in
    `docs/changes/*/spec-retro.md`.
-10. **Open questions:** what the evidence could not settle.
+11. **Open questions:** what the evidence could not settle.
 
-## Session capture
+## Session records
 
-- Each stage skill writes `<session id> <change folder> <stage>` to
-  `.kentra-rpir/sessions.map` when it starts. The implement stage registers the
-  change folder inside the integration worktree, so its transcript is committed on
-  the implementation branch. The script also keeps `<change>/sessions/index`
-  (`<session id> <stage>`), which the retro uses to tell implement sessions from
-  planning ones.
-- `hooks/capture-session.sh` (POSIX `sh`, no other runtime assumed) runs on
-  `PreCompact` and `SessionEnd`. If the session is in the map, it copies the
-  transcript and its `subagents/` directory into `<change>/sessions/`. A later
-  copy replaces an earlier one, which is safe because a transcript only grows.
-- Each skill also runs the script directly at the end of its stage, so the committed
-  copy is complete even if the session never ends cleanly.
-- Before writing, the script redacts common credential patterns: GitHub tokens
-  (`ghp_`, `gho_`, `github_pat_`), Anthropic and OpenAI keys (`sk-ant-`, `sk-`),
-  AWS keys (`AKIA…`), Slack tokens (`xox?-`) and PEM private-key blocks.
+The spec and plan stages keep one trimmed, redacted log of their sessions in the
+change folder; the implement and review stages keep nothing in git, because the
+retro reads those transcripts where Claude Code already keeps them.
+
+### Finding sessions
+
+Each stage skill writes `<session id> <change folder> <stage>` to
+`.kentra-rpir/sessions.map` when it starts, using the plain change folder path for
+every stage, including implement and review. `scripts/sessions.sh` is the one place
+that parses the map and finds transcripts: `sessions.sh list` lists every session
+registered to a change, with its stage(s) and transcript path; `sessions.sh transcript`
+resolves a session id to its transcript under Claude Code's project directory,
+falling back to a search when the project slug does not match. A transcript that
+cannot be found is reported, never fatal by itself.
+
+### The planning log
+
+`<change folder>/planning-log.jsonl` is a trimmed, redacted copy of the spec and plan
+sessions — written for agents, not for reading by humans — kept by
+`scripts/planning-log.sh`. It keeps user messages, assistant text, questions and
+answers, tool calls (one line each) and compaction markers; it drops tool results,
+thinking, and every subagent and workflow-agent transcript, whose results already
+live in `research/` and the self-review output. The plan skill writes it when the
+user approves the plan, and commits it in the same commit as `plan.yaml`. Before
+every spec self-review, the spec skill runs `planning-log.sh` into the gitignored
+`.kentra-rpir/reviewed/<change folder name>/planning-log.jsonl` and passes that
+path as `transcripts`.
+
+**Trade-off, accepted:** full transcripts are not in git. Claude Code's transcript
+cleanup (`cleanupPeriodDays`, 30 days by default) does not matter, because the retro
+runs right after implement.
 
 Claude Code keeps every message in the transcript across compaction, marking the
-compactions; we checked this on version 2.1.296. It deletes transcripts after
-`cleanupPeriodDays` (30 by default), which is why they are copied into the repo.
-The transcript format is internal to Claude Code, so the retro's pre-pass reads it
-leniently and records the Claude Code version.
+compactions; we checked this on version 2.1.296. The transcript format is internal
+to Claude Code, so the retro's pre-pass reads it leniently and records the Claude
+Code version.
 
 ## Workflow prompts
 
@@ -533,9 +563,7 @@ Research runs in two tiers, and never twice for the same premise (see
    runs each once. A **judge** (`research.reasoner`, Opus) reads every file, re-runs
    every experiment itself, judges from its own runs, and writes `result.md`.
 
-The checker writes its own report file, `<prefix>-<slug>.md`, with the naming
-convention `<stage>-<slug>.md` (`spec-`, `plan-`, and `<stage>-review-`,
-`<stage>-skeleton-review-` or `<stage>-diff-review-` for self-review research).
+The checker writes its own report file, `<prefix>-<slug>.md`.
 
 A topic the docs cannot settle, and that does not escalate, stays `unverified` with
 a note that a spike is available on request.
