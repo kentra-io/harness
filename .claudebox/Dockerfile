@@ -48,7 +48,7 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/b
 # --- kentra SDD primitives on PATH ---
 # constitution: pinned static release binary, checksum-verified (see
 # adr-sourced-constitution/docs/releasing.md). CGO-free single binary — no Go build.
-ARG CONSTITUTION_VERSION=0.3.2
+ARG CONSTITUTION_VERSION=0.4.0
 RUN set -eux; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in amd64|arm64) ;; *) echo "unsupported arch: $arch" >&2; exit 1 ;; esac; \
